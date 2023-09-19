@@ -3,7 +3,7 @@ package db
 import (
 	"os"
 
-	"github.com/1055373165/groupcache/middleware/logger"
+	"github.com/1055373165/groupcache/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
