@@ -4,7 +4,7 @@
 
 支持 HTTP、RPC 和服务注册发现的分布式键值存储系统；
 
-本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见项目分析部分）；
+本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见 project_analysis 部分）；
 
 ## 功能扩展
 - 支持 RPC 
