@@ -3,9 +3,9 @@ package consistenthash
 import (
 	"testing"
 
-	"github.com/1055373165/groupcache/conf"
-	"github.com/1055373165/groupcache/db"
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/conf"
+	"github.com/1055373165/distributekv/db"
+	"github.com/1055373165/distributekv/logger"
 )
 
 func init() {

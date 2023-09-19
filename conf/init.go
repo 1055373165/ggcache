@@ -1,8 +1,8 @@
 package conf
 
 import (
-	"github.com/1055373165/groupcache/db"
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/db"
+	"github.com/1055373165/distributekv/logger"
 )
 
 func Init() {

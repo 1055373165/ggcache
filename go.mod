@@ -1,4 +1,4 @@
-module github.com/1055373165/groupcache
+module github.com/1055373165/distributekv
 
 go 1.20
 

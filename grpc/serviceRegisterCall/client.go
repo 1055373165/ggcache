@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/1055373165/groupcache/conf"
-	pb "github.com/1055373165/groupcache/grpc/groupcachepb"
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/conf"
+	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
+	"github.com/1055373165/distributekv/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/resolver"
