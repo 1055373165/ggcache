@@ -10,7 +10,7 @@
 
 > ./test.sh
 
-![Alt text](<CleanShot 2023-09-19 at 11.33.40@2x.png>)
+![Alt text](<../resources/images/CleanShot 2023-09-19 at 11.33.40@2x.png>)
 
 # 问题
 
