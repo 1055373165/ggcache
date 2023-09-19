@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/logger"
 )
 
 type Call struct {

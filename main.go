@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/1055373165/groupcache/conf"
-	group "github.com/1055373165/groupcache/distributekv"
-	services "github.com/1055373165/groupcache/etcd"
+	"github.com/1055373165/distributekv/conf"
+	group "github.com/1055373165/distributekv/distributekv"
+	services "github.com/1055373165/distributekv/etcd"
 )
 
 var (

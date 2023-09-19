@@ -2,13 +2,13 @@
 
 echo ">>> start test"
 
-cd ../grpc/client/
+cd ../grpc/rpcCallClient/
 
 # test1
 go run client.go
 
 # test2
-cd ../sendRequest/
+cd ../serviceRegisterCall/
 go run client.go
 
 

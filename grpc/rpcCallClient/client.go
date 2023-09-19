@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/1055373165/groupcache/conf"
-	pb "github.com/1055373165/groupcache/grpc/groupcachepb"
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/conf"
+	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
+	"github.com/1055373165/distributekv/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -44,5 +44,5 @@ func main() {
 		logger.Logger.Info("没有查询到这个人的记录", err.Error())
 		return
 	}
-	logger.Logger.Info("成功从 RPC 返回调用结果：", string(response.GetValue()))
+	logger.Logger.Infof("成功从 RPC 返回调用结果：%s\n", string(response.GetValue()))
 }

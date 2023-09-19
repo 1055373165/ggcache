@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/1055373165/groupcache/logger"
+	"github.com/1055373165/distributekv/logger"
 )
 
 type Hash func(data []byte) uint32
