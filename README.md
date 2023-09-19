@@ -212,17 +212,17 @@ RPC 请求由第一个节点（localhost:9999）接收到，一致性 hash 模�
 ```
 
 ## 参考资源链接
-1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 GeeCache
-2. [gcache](https://github.com/bluele/gcache) 缓存淘汰策略（基于策略模式）
-3. [groupcache](https://github.com/golang/groupcache) 常作为 memcached 替代
-4. [grpc](https://grpc.io/docs/languages/go/quickstart/) gRPC 官方文档
-5. [proto3](https://protobuf.dev/programming-guides/proto3/) protobuf 官方文档
-6. [protobuf](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862) protobuf 编码原理
-7. [protoscope](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5) proto 个人学习笔记
-8. [etcd](https://etcd.io/docs/v3.5/) 官方文档
-9. [goreman](https://github.com/mattn/goreman) etcd 集群搭建
-10. [shell](https://www.shellscript.sh/) shell 脚本
-11. [gorm](https://gorm.io/docs/models.html) 快速搭建后端数据库
-12. [air](https://github.com/cosmtrek/air) 动态加载（方便调试）
-13. [log](https://github.com/charmbracelet/log) 极简、多彩的 Go 日志库
+1. [ Geektutu]( https://geektutu.com/post/geecache.html)                                             分布式缓存 GeeCache
+2. [gcache](https://github.com/bluele/gcache)                                                        缓存淘汰策略（基于策略模式）
+3. [groupcache](https://github.com/golang/groupcache)                                                常作为 memcached 替代
+4. [grpc](https://grpc.io/docs/languages/go/quickstart/)                                             gRPC 官方文档
+5. [proto3](https://protobuf.dev/programming-guides/proto3/)                                         protobuf 官方文档
+6. [protobuf](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862)  protobuf 编码原理
+7. [protoscope](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5)     proto 个人学习笔记
+8. [etcd](https://etcd.io/docs/v3.5/)                                                                官方文档
+9. [goreman](https://github.com/mattn/goreman)                                                       etcd 集群搭建
+10. [shell](https://www.shellscript.sh/)                                                             shell 脚本
+11. [gorm](https://gorm.io/docs/models.html)                                                         快速搭建后端数据库
+12. [air](https://github.com/cosmtrek/air)                                                           动态加载（方便调试）
+13. [log](https://github.com/charmbracelet/log)                                                      极简、多彩的 Go 日志库
 
