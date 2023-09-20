@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/1055373165/distributekv/conf"
-	group "github.com/1055373165/distributekv/distributekv"
-	services "github.com/1055373165/distributekv/etcd"
+	"github.com/1055373165/Distributed_KV_Store/conf"
+	group "github.com/1055373165/Distributed_KV_Store/distributekv"
+	services "github.com/1055373165/Distributed_KV_Store/etcd"
 )
 
 var (

@@ -3,11 +3,11 @@ package distributekv
 import (
 	"errors"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 
 	"sync"
 
-	"github.com/1055373165/distributekv/distributekv/singleflight"
+	"github.com/1055373165/Distributed_KV_Store/distributekv/singleflight"
 )
 
 // groupcache 模块提供比 cache 更高一层的抽象能力

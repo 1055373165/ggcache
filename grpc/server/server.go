@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	server "github.com/1055373165/distributekv/distributekv"
-	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
+	server "github.com/1055373165/Distributed_KV_Store/distributekv"
+	pb "github.com/1055373165/Distributed_KV_Store/grpc/groupcachepb"
 	"google.golang.org/grpc"
 )
 

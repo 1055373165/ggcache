@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	services "github.com/1055373165/distributekv/etcd"
+	services "github.com/1055373165/Distributed_KV_Store/etcd"
 
-	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
+	pb "github.com/1055373165/Distributed_KV_Store/grpc/groupcachepb"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )

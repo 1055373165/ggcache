@@ -3,7 +3,7 @@ package db
 import (
 	"os"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

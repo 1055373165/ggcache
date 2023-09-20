@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/1055373165/distributekv/conf"
-	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/conf"
+	pb "github.com/1055373165/Distributed_KV_Store/grpc/groupcachepb"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

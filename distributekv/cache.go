@@ -3,9 +3,9 @@ package distributekv
 import (
 	"sync"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 
-	"github.com/1055373165/distributekv/policy"
+	"github.com/1055373165/Distributed_KV_Store/policy"
 )
 
 // cache 模块负责提供对lru模块的并发控制

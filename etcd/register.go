@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"

@@ -1,4 +1,4 @@
-module github.com/1055373165/distributekv
+module github.com/1055373165/Distributed_KV_Store
 
 go 1.20
 

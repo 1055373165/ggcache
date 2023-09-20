@@ -1,3 +1,10 @@
+# 实现自定义 gRPC 服务
+
+因为通过 protoc 编译器和 grpc-go 插件生成的代码中的 Server 是一个只声明了方法但没有具体实现的 UnimplementServer，所以我们需要按照自己需求实现一个自定义的 server，并将其注册到 grpc server 上。
+
+具体代码见：distributekv/server.go
+
+```go
 package distributekv
 
 import (
@@ -12,11 +19,11 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 
-	"github.com/1055373165/distributekv/distributekv/consistenthash"
-	services "github.com/1055373165/distributekv/etcd"
-	pb "github.com/1055373165/distributekv/grpc/groupcachepb"
-	"github.com/1055373165/distributekv/logger"
-	"github.com/1055373165/distributekv/utils"
+	"github.com/1055373165/Distributed_KV_Store/distributekv/consistenthash"
+	services "github.com/1055373165/Distributed_KV_Store/etcd"
+	pb "github.com/1055373165/Distributed_KV_Store/grpc/groupcachepb"
+	"github.com/1055373165/Distributed_KV_Store/logger"
+	"github.com/1055373165/Distributed_KV_Store/utils"
 )
 
 // server 模块为 groupcache 之间提供了通信能力
@@ -189,6 +196,4 @@ func (s *Server) Stop() {
 	s.clients = nil // 清空一致性哈希信息，帮助 GC 进行垃圾回收
 	s.consHash = nil
 }
-
-// 测试 Server 是否实现了 Picker 接口
-var _ Picker = (*Server)(nil)
+```

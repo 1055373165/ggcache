@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 )
 
 type Hash func(data []byte) uint32

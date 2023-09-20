@@ -1,8 +1,8 @@
 package conf
 
 import (
-	"github.com/1055373165/distributekv/db"
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/db"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 )
 
 func Init() {

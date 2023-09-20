@@ -58,3 +58,8 @@ func NewClient(service string) *client {
 
 // 测试 client 是否实现了 Fetcher 接口
 var _ Fetcher = (*client)(nil)
+
+// Fetcher 定义了从远端获取缓存的能力，所以每个 Peer 都应实现这个接口
+type Fetcher interface {
+	Fetch(group string, key string) ([]byte, error)
+}

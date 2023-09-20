@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/1055373165/distributekv/logger"
+	"github.com/1055373165/Distributed_KV_Store/logger"
 )
 
 type Call struct {
