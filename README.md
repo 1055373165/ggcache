@@ -130,6 +130,7 @@ etcdctl get clusters --prefix
 
 ```bash
 cd ../../script
+./run.sh
 
 ```
 
