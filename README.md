@@ -1,4 +1,4 @@
-# Distributed_KV_Cache
+# Distributed_KV_Store
 
 ## 项目介绍
 
