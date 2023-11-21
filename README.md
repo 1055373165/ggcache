@@ -210,6 +210,9 @@ RPC 请求由第一个节点（localhost:9999）接收到，一致性 hash 模�
 3:09PM INFO <rpcCallClient/client.go:47> Baking 🍪 : 成功从 RPC 返回调用结果：100
 ```
 
+## 总结
+本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见 project_analysis 部分）；geecache 中实现了基于 http 协议的分布式集群节点之间的通信，但并未完全实现基于 RPC 的通信，本项目参考 grpc 和 protobuf 官方文档，实现了基于 RPC 的远程过程调用，并给出了自动化测试脚本；除此之外，实现了基于 etcd 集群的服务注册发现功能，服务实例在启动时将服务地址注册到 etcd，客户端根据服务名即可从 etcd 获取指定服务的 grpc 连接，然后创建 client stub 完成 RPC 调用。
+
 ## 参考资源链接
 1. [ Geektutu]( https://geektutu.com/post/geecache.html)                                             分布式缓存 GeeCache
 2. [gcache](https://github.com/bluele/gcache)                                                        缓存淘汰策略（基于策略模式）
@@ -224,6 +227,3 @@ RPC 请求由第一个节点（localhost:9999）接收到，一致性 hash 模�
 11. [gorm](https://gorm.io/docs/models.html)                                                         快速搭建后端数据库
 12. [air](https://github.com/cosmtrek/air)                                                           动态加载（方便调试）
 13. [log](https://github.com/charmbracelet/log)                                                      极简、多彩的 Go 日志库
-
-## 总结
-本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见 project_analysis 部分）；geecache 中实现了基于 http 协议的分布式集群节点之间的通信，但并未完全实现基于 RPC 的通信，本项目参考 grpc 和 protobuf 官方文档，实现了基于 RPC 的远程过程调用，并给出了自动化测试脚本；除此之外，实现了基于 etcd 集群的服务注册发现功能，服务实例在启动时将服务地址注册到 etcd，客户端根据服务名即可从 etcd 获取指定服务的 grpc 连接，然后创建 client stub 完成 RPC 调用。
