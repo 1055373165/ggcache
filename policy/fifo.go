@@ -36,6 +36,7 @@ func (f *fifoCahce) Add(key string, value Value) {
 		f.cache[key] = ele
 		f.nbytes += int64(len(kv.key)) + int64(kv.value.Len())
 	}
+
 	for f.maxBytes != 0 && f.maxBytes < f.nbytes {
 		f.RemoveFront()
 	}

@@ -30,7 +30,6 @@ func (p *lfuCache) Add(key string, value Value) {
 		e.referenced()
 		heap.Fix(p.pq, e.index)
 	} else {
-
 		e := &lfuEntry{0, entry{key, value, nil}, 0}
 		e.referenced()
 		heap.Push(p.pq, e)
@@ -45,7 +44,6 @@ func (p *lfuCache) Add(key string, value Value) {
 func (p *lfuCache) CleanUp(ttl time.Duration) {
 	for _, e := range *p.pq {
 		if e.entry.expired(ttl) {
-
 			kv := heap.Remove(p.pq, e.index).(*lfuEntry).entry
 			delete(p.cache, kv.key)
 			p.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())

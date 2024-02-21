@@ -30,6 +30,7 @@ func GetPeers(prefix string) ([]string, error) {
 	for _, kv := range resp.Kvs {
 		peers = append(peers, string(kv.Value))
 	}
+
 	logger.Logger.Info("get peer addr list from etcd success,peers:", peers)
 	return peers, nil
 }

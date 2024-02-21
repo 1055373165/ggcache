@@ -19,9 +19,9 @@ func main() {
 	flag.Parse()
 	// 新建 cache 实例
 	g := group.NewGroupInstance("scores")
-
 	// New 一个自己实现的服务实例
 	addr := fmt.Sprintf("localhost:%d", *port)
+
 	svr, err := group.NewServer(addr)
 	if err != nil {
 		log.Fatal(err)
@@ -32,6 +32,7 @@ func main() {
 	if err != nil { // 如果查询失败使用默认的地址
 		addrs = []string{"localhost:9999"}
 	}
+
 	fmt.Println("从 etcd 处获取的 server 地址", addrs)
 	// 将节点打到哈希环上
 	svr.SetPeers(addrs)

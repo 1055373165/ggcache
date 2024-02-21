@@ -16,7 +16,6 @@ func Init() {
 		TimeFormat:      time.Kitchen,
 		Prefix:          "Baking 🍪 ",
 	})
-
 	level := os.Getenv("LogLevel")
 	switch level {
 	case "debug":

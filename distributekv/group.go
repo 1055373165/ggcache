@@ -10,7 +10,8 @@ import (
 func NewGroupInstance(groupname string) *Group {
 	g := NewGroup(groupname, 1<<10, RetrieveFunc(func(key string) ([]byte, error) {
 		// 从后端数据库中查找
-		logger.Logger.Info("进入 GetterFunc，数据库中查询....")
+		logger.Logger.Info("进入 GetterFunc, 数据库中查询....")
+
 		var scores []*db.Student
 		db.DB.Where("name = ?", key).Find(&scores)
 		if len(scores) == 0 {

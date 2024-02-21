@@ -24,6 +24,7 @@ func main() {
 	//关闭信号处理
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+
 	go func() {
 		s := <-ch
 		etcdUnRegister(addr)
@@ -35,21 +36,18 @@ func main() {
 	}()
 
 	err := etcdRegister(addr)
-
 	if err != nil {
 		panic(err)
 
 	}
-	lis, err := net.Listen("tcp", addr)
 
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(UnaryInterceptor()))
-
 	pb.RegisterGroupCacheServer(grpcServer, &server.Server{})
-
 	log.Printf("service start port %d\n", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		panic(err)

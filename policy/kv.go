@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type Interface interface {
+	Get(string) (Value, *time.Time, bool)
+	Add(string, Value)
+	CleanUp(ttl time.Duration)
+	Len() int
+}
+
 type entry struct {
 	key      string
 	value    Value
@@ -29,22 +36,18 @@ func (ele *entry) touch() {
 }
 
 func New(name string, maxBytes int64, onEvicted func(string, Value)) Interface {
-
-	if name == "fifo" {
+	switch name {
+	case "fifo":
 		return newFifoCache(maxBytes, onEvicted)
-	}
-	if name == "lru" {
+	case "lru":
 		return newLruCache(maxBytes, onEvicted)
-	}
-	if name == "lfu" {
+	case "lfu":
 		return newLfuCache(maxBytes, onEvicted)
 	}
-
 	return nil
 }
 
 func newLruCache(maxBytes int64, onEvicted func(string, Value)) *LRUCache {
-
 	return &LRUCache{
 		maxBytes:  maxBytes,
 		ll:        list.New(),
@@ -54,7 +57,6 @@ func newLruCache(maxBytes int64, onEvicted func(string, Value)) *LRUCache {
 }
 
 func newFifoCache(maxBytes int64, onEvicted func(string, Value)) *fifoCahce {
-
 	return &fifoCahce{
 		maxBytes:  maxBytes,
 		ll:        list.New(),
@@ -71,11 +73,4 @@ func newLfuCache(maxBytes int64, onEvicted func(string, Value)) *lfuCache {
 		cache:     make(map[string]*lfuEntry),
 		OnEvicted: onEvicted,
 	}
-}
-
-type Interface interface {
-	Get(string) (Value, *time.Time, bool)
-	Add(string, Value)
-	CleanUp(ttl time.Duration)
-	Len() int
 }

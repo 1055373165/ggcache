@@ -32,6 +32,7 @@ func (c *cache) set(key string, value ByteView) {
 	}
 	c.lru.Add(key, value)
 }
+
 func (c *cache) get(key string) (ByteView, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
