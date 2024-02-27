@@ -99,7 +99,7 @@ goreman -f Procfile start
 
 查看成员状态
 
-![](images/2023-09-19-15-01-32.png)
+![](resources/images_readme/2023-09-19-15-01-32.png)
 
 2. 将三个服务节点的信息保存到 etcd 集群中
 
