@@ -219,7 +219,7 @@ cd ../../script
 
 ## 参考资源链接
 1. [Geektutu]( https://geektutu.com/post/geecache.html)----------------------------------------------分布式缓存 GeeCache
-2. [gcache](https://github.com/bluele/gcache)----------------------------------------------缓存淘汰策略（基于策略模式）                                                                                                      
+2. [gcache](https://github.com/bluele/gcache)------------------------------------------------缓存淘汰策略（基于策略模式）                                                                                                      
 3. [groupcache](https://github.com/golang/groupcache)----------------------------------------------常作为 memcached 替代
 4. [grpc](https://grpc.io/docs/languages/go/quickstart/)----------------------------------------------gRPC 官方文档
 5. [proto3](https://protobuf.dev/programming-guides/proto3/)----------------------------------------------protobuf 官方文档
