@@ -1,6 +1,6 @@
 # Distributed_KV_Store
 
-## 项目介绍
+# 项目介绍
 
 支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；
 
