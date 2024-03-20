@@ -4,7 +4,7 @@
 
 同时支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；使用 etcd 集群作为服务注册发现的外部统一存储，其核心是使用 Raft 算法保证强一致性；
 
-鉴于 Raft 在实际工程实践中的高使用频次，这里提供 MIT-8.624 的 [Raft 实现](https://github.com/1055373165/MIT-8.624-Raft)（已通过所有测试）和一篇易于 etcd/raft 源码介绍 [Raft 算法设计和实现](https://arthurchiao.art/blog/raft-paper-zh/)的博士论文，感兴趣可以看一下。
+鉴于 Raft 在实际工程实践中的高使用频次，这里提供 MIT-8.624 的 [Raft 实现](https://github.com/1055373165/MIT-8.624-Raft)（已通过所有测试）和一篇基于 etcd/raft 源码介绍 [Raft 算法设计和实现](https://arthurchiao.art/blog/raft-paper-zh/)的博士论文，感兴趣可以看一下。
 
 ## 功能扩展
 - 支持 RPC （遵循 gRPC 框架）
