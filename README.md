@@ -2,7 +2,9 @@
 
 ## 项目介绍
 
-同时支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；
+同时支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；使用 etcd 集群作为服务注册发现的外部统一存储，其核心是使用 Raft 算法保证强一致性；
+
+鉴于 Raft 在实际工程实践中的高使用频次，这里提供 MIT-8.624 的 [Raft 实现]([url](https://github.com/1055373165/MIT-8.624-Raft))（已通过所有测试）和非常好的一篇介绍 [Raft 算法设计和实现的博士论文]([url](https://arthurchiao.art/blog/raft-paper-zh/))，感兴趣可以看一下。
 
 ## 功能扩展
 - 支持 RPC （遵循 gRPC 框架）
@@ -216,6 +218,7 @@ cd ../../script
 - 本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见 project_analysis 部分）；
 - geecache 中实现了基于 http 协议的分布式集群节点之间的通信，但并未完全实现基于 RPC 的通信，本项目参考 grpc 和 protobuf 官方文档，实现了基于 RPC 的远程过程调用，并给出了自动化测试脚本；
 - 除此之外，实现了基于 etcd 集群的服务注册发现功能，服务实例在启动时将服务地址注册到 etcd，客户端根据服务名即可从 etcd 获取指定服务的 grpc 连接，然后创建 client stub 完成 RPC 调用。
+- 最后，Raft 算法有几个版本的实现，目前工程实践中使用比较多的是 hashcorp 的（比较难理解），个人推荐 etcd 的 Raft 实现（个人感觉写的非常优雅）。
 
 ## 参考资源链接
 1. [Geektutu]( https://geektutu.com/post/geecache.html)----------------------------------------------分布式缓存 GeeCache
