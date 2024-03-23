@@ -2,7 +2,7 @@
 
 ## 项目介绍
 
-同时支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；使用 etcd 集群作为服务注册发现的外部统一存储，其核心是使用 Raft 算法保证强一致性；Raft 在实际工程实践中使用频率相对比较比较高，而且相比于 Paxos 算法，Raft 更容易理解，这里推荐 MIT-8.624 的 [Raft 实现](https://github.com/1055373165/MIT-8.624-Raft)（已通过所有测试）和一篇基于 etcd/raft 源码介绍 Raft 算法设计和实现的博士论文[link](https://arthurchiao.art/blog/raft-paper-zh/)，感兴趣可以看一下。
+同时支持 HTTP、RPC 和服务注册发现的分布式 KV 缓存系统；使用 etcd 集群作为服务注册发现的外部统一存储，其核心是使用 Raft 算法保证强一致性；Raft 在工程实践中使用频率相对比较高（比如 etcd、b 站的 paladin、shardkv 等），而且相比于 Paxos 算法，Raft 更容易理解，这里推荐 MIT-8.624 的 [Raft 实现](https://github.com/1055373165/MIT-8.624-Raft)（已通过所有测试）和一篇基于 etcd/raft 源码介绍 Raft 算法设计和实现的博士论文[link](https://arthurchiao.art/blog/raft-paper-zh/)，感兴趣可以看一下。
 
 ## 功能扩展
 - 支持 RPC （遵循 gRPC 框架）
