@@ -1,1 +1,0 @@
-![Alt text](<CleanShot 2023-09-19 at 10.30.40@2x.png>)
