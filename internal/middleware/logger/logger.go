@@ -2,7 +2,6 @@ package logger
 
 import (
 	"os"
-	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -11,10 +10,10 @@ var Logger *log.Logger
 
 func Init() {
 	Logger = log.NewWithOptions(os.Stderr, log.Options{
-		ReportCaller:    true,
+		// ReportCaller:    true,
 		ReportTimestamp: true,
-		TimeFormat:      time.Kitchen,
-		Prefix:          "Baking 🍪 ",
+		// TimeFormat:      time.Kitchen,
+		// Prefix:          "Baking 🍪 ",
 	})
 	level := os.Getenv("LogLevel")
 	switch level {
@@ -29,5 +28,4 @@ func Init() {
 	default:
 		Logger.SetLevel(log.DebugLevel)
 	}
-	Logger.Debugf("log level: %v", level)
 }

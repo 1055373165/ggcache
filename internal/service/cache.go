@@ -1,9 +1,9 @@
 package service
 
 import (
-	"log"
 	"sync"
 
+	"ggcache/internal/middleware/logger"
 	"ggcache/internal/service/cachepurge"
 	"ggcache/internal/service/cachepurge/interfaces"
 )
@@ -45,7 +45,7 @@ func (c *cache) get(key string) (ByteView, bool) {
 	}
 	// the return value of Get is the Value interface, direct type assertion
 	if v, _, ok := c.strategy.Get(key); ok {
-		log.Printf("cache hit, key: %v, value: %v\n", key, v)
+		logger.Logger.Infof("cache hit, key: %v, value: %v", key, v)
 		return v.(ByteView), true
 	} else {
 		return ByteView{}, false

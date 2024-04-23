@@ -2,8 +2,14 @@ package service
 
 import (
 	"errors"
+	"ggcache/internal/middleware/logger"
 	"ggcache/internal/service/singleflight"
 	"sync"
+)
+
+const (
+	apiServer  = "http://127.0.0.1:9999"
+	bindServer = "http://127.0.0.1:8001"
 )
 
 var (
@@ -22,6 +28,10 @@ type Group struct {
 func NewGroup(name string, strategy string, maxBytes int64, retriever Retriever) *Group {
 	if retriever == nil {
 		panic("backend database retrieve ability must be provided, otherwise, the cache system has no meaning.")
+	}
+
+	if _, ok := groups[name]; ok {
+		return groups[name]
 	}
 
 	g := &Group{
@@ -81,6 +91,8 @@ func (g *Group) load(key string) (ByteView, error) {
 	view, err := g.flight.Do(key, func() (interface{}, error) {
 		if g.locator != nil {
 			if fetcher, ok := g.locator.Pick(key); ok {
+				// send request
+				logger.Logger.Info("send request to fetcher")
 				bytes, err := fetcher.Fetch(g.name, key)
 				if err == nil { // success path(cache hit)
 					return ByteView{b: cloneBytes(bytes)}, nil
@@ -88,7 +100,7 @@ func (g *Group) load(key string) (ByteView, error) {
 			}
 		}
 
-		// failed path(cache missed), query database
+		// query database
 		return g.backSource(key)
 	})
 

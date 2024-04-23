@@ -31,7 +31,7 @@ func NewConsistentHash(replicas int, hash Hash) *ConsistentHash {
 1. put real nodes into the hash ring in the form of virtual nodes
 2. sort the new hash ring
 */
-func (ch *ConsistentHash) AddTruthNode(nodes ...string) {
+func (ch *ConsistentHash) AddTruthNode(nodes []string) {
 	for _, node := range nodes {
 		for i := 0; i < ch.replicas; i++ {
 			hash := int(ch.hash([]byte(node + strconv.Itoa(i))))

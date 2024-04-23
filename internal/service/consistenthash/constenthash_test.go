@@ -17,7 +17,7 @@ func TestConsistentHash(t *testing.T) {
 	// 6 16 26
 	// 4 14 24
 	// 2 12 22
-	ch.AddTruthNode("2", "4")
+	ch.AddTruthNode([]string{"2", "4"})
 
 	for _, virtualhash := range ch.virtualNodes {
 		logger.Logger.Infof("虚拟节点 hash 值：%d, 对应的真实节点为：%s", virtualhash, ch.hashMap[virtualhash])
