@@ -20,7 +20,7 @@ func main() {
 
 	ggcache := service.NewGroupInstance("scores")
 	// grpc node local service address
-	serviceAddr := fmt.Sprintf("127.0.0.1:%d", *port)
+	serviceAddr := fmt.Sprintf("localhost:%d", *port)
 
 	// get a grpc service instance
 	ch := make(chan bool)
