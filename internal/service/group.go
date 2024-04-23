@@ -7,7 +7,7 @@ import (
 )
 
 func NewGroupInstance(groupName string) *Group {
-	g := NewGroup(groupName, "lru", 1<<10, RetrieveFunc(func(key string) ([]byte, error) {
+	g := NewGroup(groupName, "lru", 2<<10, RetrieveFunc(func(key string) ([]byte, error) {
 		// 从后端数据库中查找
 		logger.Logger.Info("进入 RetrieveFunc, 数据库中查询....")
 

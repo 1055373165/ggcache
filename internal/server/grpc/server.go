@@ -20,7 +20,7 @@ grpc server provides communication capabilities between groupcache.
 In this way, groupcache deployed on other machines can obtain the cache by accessing the server.
 */
 const (
-	defaultAddr     = "127.0.0.1:9999"
+	defaultAddr     = "localhost:9999"
 	defaultReplicas = 50
 )
 
@@ -28,7 +28,7 @@ var _ service.Picker = (*Server)(nil)
 
 // server and group are decoupled, so the server must implement concurrency control by itself
 type Server struct {
-	pb.UnimplementedGroupCacheServer
+	pb.UnimplementedGGCacheServer
 
 	Addr           string     // ip:port
 	Status         bool       // running status
@@ -128,7 +128,7 @@ func (s *Server) UpdatePeers(peerAddrs []string) {
 			case <-s.stopSignal:
 				s.Stop()
 			default:
-				time.Sleep(time.Millisecond * 500)
+				time.Sleep(time.Millisecond * 300)
 			}
 		}
 	}()
@@ -153,6 +153,7 @@ func (s *Server) reconstruct() {
 		// both service registry and service discovery processes need to follow the same format
 		serviceNameWithPrefix := fmt.Sprintf("ggcache/%s", peerAddr)
 		s.fetchers[peerAddr] = NewGrpcFetcher(serviceNameWithPrefix)
+		logger.Logger.Infof("reconstruct peerAddr %s fetcher %v", peerAddr, s.fetchers[peerAddr])
 	}
 	logger.Logger.Infof("hash ring reconstruct, contain service peer %v", serviceList)
 }

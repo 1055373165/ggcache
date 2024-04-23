@@ -92,7 +92,7 @@ func (g *Group) load(key string) (ByteView, error) {
 		if g.locator != nil {
 			if fetcher, ok := g.locator.Pick(key); ok {
 				// send request
-				logger.Logger.Info("send request to fetcher")
+				logger.Logger.Infof("send request to fetcher %v", fetcher)
 				bytes, err := fetcher.Fetch(g.name, key)
 				if err == nil { // success path(cache hit)
 					return ByteView{b: cloneBytes(bytes)}, nil

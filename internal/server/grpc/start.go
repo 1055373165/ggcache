@@ -41,7 +41,7 @@ func (s *Server) Start() {
 	// getting a customized implementation of a grpc Server instance
 	grpcServer := grpc.NewServer()
 	// registers the service and its implementation to a concrete type that implements GroupCacheServer interface.
-	pb.RegisterGroupCacheServer(grpcServer, s)
+	pb.RegisterGGCacheServer(grpcServer, s)
 
 	// service registry
 	go func() {
@@ -58,7 +58,7 @@ func (s *Server) Start() {
 		if err != nil {
 			logger.Logger.Error(err.Error())
 		}
-		logger.Logger.Infof("[%s] Revoke service and close tcp socket", s.Addr)
+		logger.Logger.Warnf("[%s] Revoke service and close tcp socket", s.Addr)
 	}()
 
 	logger.Logger.Infof("[%s] register service success\n", s.Addr)

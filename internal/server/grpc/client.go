@@ -41,7 +41,7 @@ func (c *grpcFetcher) Fetch(groupName string, key string) ([]byte, error) {
 	defer conn.Close()
 
 	logger.Logger.Infof("discover success, create client stub")
-	clientStub := pb.NewGroupCacheClient(conn)
+	clientStub := pb.NewGGCacheClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

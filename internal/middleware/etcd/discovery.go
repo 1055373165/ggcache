@@ -4,6 +4,7 @@ import (
 	"context"
 	"ggcache/internal/middleware/logger"
 	"log"
+	"math/rand"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
@@ -23,7 +24,7 @@ func Discovery(c *clientv3.Client, service string) (*grpc.ClientConn, error) {
 		"etcd:///"+service,
 		grpc.WithResolvers(etcdResolver),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
+		// grpc.WithBlock(),
 	)
 }
 
@@ -47,6 +48,7 @@ func ListServicePeers(serviceName string) []string {
 		logger.Logger.Errorf("enpoint manager list op failed, %v", err)
 		return []string{}
 	}
+
 	var peers []string
 	for key, endpoint := range Key2EndpointMap {
 		peers = append(peers, endpoint.Addr)
@@ -80,4 +82,11 @@ func DynamicServices(update chan bool, service string) {
 			}
 		}
 	}
+}
+
+func shuffle(peers []string) string {
+	rand.Shuffle(len(peers), func(i, j int) {
+		peers[i], peers[j] = peers[j], peers[i]
+	})
+	return peers[len(peers)/2]
 }

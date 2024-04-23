@@ -12,8 +12,8 @@ import (
 
 type Student struct {
 	gorm.Model
-	Name  string `gorm:"type:varchar(255);uniqueIndex" json:"name"`
-	Score string `gorm:"type:varchar(255)" json:"score"`
+	Name  string `gorm:"type:varchar(255);uniqueIndex;index:idx_name_score,sort:asc" json:"name"`
+	Score string `gorm:"type:varchar(255);index:idx_name_score,sort:asc" json:"score"`
 }
 
 const (

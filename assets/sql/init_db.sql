@@ -16,5 +16,6 @@ CREATE TABLE IF NOT EXISTS `students` (
   `name` VARCHAR(255) NOT NULL,
   `score` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_students_name` (`name`(255))
+  UNIQUE KEY (`name`),
+  KEY `idx_students_name_score` (`name`(255), `score`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
