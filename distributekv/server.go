@@ -19,22 +19,25 @@ import (
 	"github.com/1055373165/Distributed_KV_Store/utils"
 )
 
-// server 模块为 groupcache 之间提供了通信能力
-// 这样部署在其他机器上的 groupcache 可以通过访问 server 获取缓存
-// 至于找哪一个主机，由一致性 hash 负责
+// The Server module provides communication capabilities between groupcache.
+// In this way, groupcache deployed on other machines can obtain the cache by accessing the server.
+// As for which host to find, consistent hashing is responsible.
 const (
-	defaultAddr     = "127.0.0.1:6324"
+	defaultAddr     = "127.0.0.1:9999"
 	defaultReplicas = 50
 )
 
+// Assertion whether the Server implements the Picker interface
+var _ Picker = (*Server)(nil)
+
 var (
-	defaultEtcdConfig = clientv3.Config{
+	DefaultEtcdConfig = clientv3.Config{
 		Endpoints:   []string{"localhost:2379"},
 		DialTimeout: 5 * time.Second,
 	}
 )
 
-// server 和 Group 是解耦合的，所以 server 要自己实现并发控制
+// Server and Group are decoupled, so the server must implement concurrency control by itself
 type Server struct {
 	pb.UnimplementedGroupCacheServer
 
@@ -46,7 +49,7 @@ type Server struct {
 	clients     map[string]*client
 }
 
-// NewServer 创建 cache 的 server，若 addr 为空，则使用 defaultAddr
+// New Server creates a cache server. If addr is empty, default Addr is used.
 func NewServer(addr string) (*Server, error) {
 	if addr == "" {
 		addr = defaultAddr
@@ -58,11 +61,11 @@ func NewServer(addr string) (*Server, error) {
 	return &Server{Addr: addr}, nil
 }
 
-// Get 实现了 Groupcache service 的 Get 方法
+// Server Implement GroupCacheServer in groupcachepb
 func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	group, key := req.GetGroup(), req.GetKey()
 	resp := &pb.GetResponse{}
-	logger.Logger.Infof("[groupcache server %s] Recv RPC Request - (%s)/(%s)", s.Addr, group, key)
+	logger.Logger.Infof("[Groupcache server %s] Recv RPC Request - (%s)/(%s)", s.Addr, group, key)
 
 	if key == "" || group == "" {
 		return resp, fmt.Errorf("key and group name is reqiured")
@@ -81,7 +84,14 @@ func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 	return resp, nil
 }
 
-// Start 启动 Cache 服务
+/*
+------------启动服务----------------
+1. 设置 status = true 表示服务器已经在运行
+2. 初始化 stop channel，用于通知 registry stop keepalive
+3. 初始化 tcp socket 并开始监听指定端口
+4. 注册自定义 grpc 服务至 grpc 空白实例，这样 grpc 收到 request 可以分发给 server 处理
+5. 服务注册（阻塞），异步完成
+*/
 func (s *Server) Start() error {
 	s.mu.Lock()
 
@@ -90,13 +100,6 @@ func (s *Server) Start() error {
 		return fmt.Errorf("server %s is already started", s.Addr)
 	}
 
-	// ------------启动服务----------------
-	// 1. 设置 status = true 表示服务器已经在运行
-	// 2. 初始化 stop channel，用于通知 registry stop keepalive
-	// 3. 初始化 tcp socket 并开始监听
-	// 4. 注册 rpc 服务至 grpc，这样 grpc 收到 request 可以分发给 server 处理
-	// 5. 将自己的服务名/Host地址注册至 etcd，这样 client 就可以通过 etcd 获取服务 Host 地址进行通信；这样做的好处是：client 只需要知道服务名称以及 etcd 的 Host 就可以获取
-	// 指定服务的 IP，无需将它们写死在 client 代码中
 	s.Status = true
 	s.stopsSignal = make(chan error)
 
@@ -105,19 +108,18 @@ func (s *Server) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to listen %s, error: %v", s.Addr, err)
 	}
+
 	grpcServer := grpc.NewServer()
 	pb.RegisterGroupCacheServer(grpcServer, s)
 
-	// 注册服务至 etcd
 	go func() {
-		// Register never return unless stop signal received (blocked)
+		// This operation is blocking and therefore completed asynchronously in a goroutine
 		err := services.Register("groupcache", s.Addr, s.stopsSignal)
 		if err != nil {
 			logger.Logger.Error(err.Error())
 		}
-		// close channel
+		// When Register exits, the service stops
 		close(s.stopsSignal)
-		// close tcp listen
 		err = lis.Close()
 		if err != nil {
 			logger.Logger.Error(err.Error())
@@ -125,20 +127,14 @@ func (s *Server) Start() error {
 		logger.Logger.Infof("[%s] Revoke service and close tcp socket ok.", s.Addr)
 	}()
 
-	logger.Logger.Infof("[%s] register service ok\n", s.Addr)
 	s.mu.Unlock()
-	// Serve接受侦听器列表上的传入连接，为每个连接创建一个新的ServerTransport和服务Goroutine。
-	// 服务Goroutines读取GRPC请求，然后调用注册的处理程序来回复它们。当lis.Accept失败并出现致命错误时，Serve返回。当此方法返回时，LIS将关闭。
-	// 除非调用Stop或GracefulStop，否则SERVE将返回非零错误。
 	if err := grpcServer.Serve(lis); s.Status && err != nil {
 		return fmt.Errorf("failed to serve %s, error: %v", s.Addr, err)
 	}
 	return nil
 }
 
-// SetPeers 将各个远端主机 IP 配置到 Server 里
-// 这样 Server 就可以 Pick 它们了
-// 注意：此操作是覆写操作，peersIP 必须满足 x.x.x.x:port 的格式
+// SetPeers configures each remote host IP to the Server
 func (s *Server) SetPeers(peersAddr []string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -151,31 +147,38 @@ func (s *Server) SetPeers(peersAddr []string) {
 		if !utils.ValidPerrAddr(peersAddr) {
 			panic(fmt.Sprintf("[peer %s] invalid address format, it shoulb be x.x.x.x:port", peersAddr))
 		}
-		// groupcache/localhost:8000
+
+		// groupcache/localhost:9999
+		// groupcache/localhost:10000
+		// groupcache/localhost:10001
+		// attention：在 ETCD 中进行服务注册时设置的 Endpoint 值和这个值一定要对应
+		// 上面 services.Register("groupcache", s.Addr, s.stopsSignal) 设置的 service 值就是 groupcache；
+		// 而 clusters 前缀是为了拿到所有实例地址做一致性哈希使用的
 		service := fmt.Sprintf("groupcache/%s", peersAddr)
-		// client {name string}  (c *client) Fetch(key string) ([]byte, error)
+		// Registering a service client (the address of the corresponding service is saved and a connection to the server can be established through the client)
 		s.clients[peersAddr] = NewClient(service)
 	}
 }
 
-// Pick 根据一致性哈希选举出 key 应该存放在的 cache
-// return false 代表从本地获取 cache
+// Selects which cache a key request should be sent to based on a consistent hash value
 func (s *Server) Pick(key string) (Fetcher, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// The real node of the hit
 	peerAddr := s.consHash.GetTruthNode(key)
+
 	// Pick itself
 	if peerAddr == s.Addr {
 		logger.Logger.Infof("oohhh! pick myself, i am %s\n", s.Addr)
 		return nil, false
 	}
 
-	logger.Logger.Infof("[cache %s] pick remote peer: %s\n", s.Addr, peerAddr)
+	logger.Logger.Infof("[current peer %s] pick remote peer: %s\n", s.Addr, peerAddr)
 	return s.clients[peerAddr], true
 }
 
-// Stop 停止 server 运行，如果 server 没有运行，这将是一个 no-op
+// Stop stops the server running
 func (s *Server) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -183,12 +186,10 @@ func (s *Server) Stop() {
 	if !s.Status {
 		return
 	}
-	// 发送停止 keepAlive 的信号，因为该节点要退出了，不需要再发送心跳探测了
+	// Sends a signal to stop keepAlive hearbeat
 	s.stopsSignal <- nil
 	s.Status = false
-	s.clients = nil // 清空一致性哈希信息，帮助 GC 进行垃圾回收
+	// Clear consistent hash information to help GC perform garbage collection
+	s.clients = nil
 	s.consHash = nil
 }
-
-// 测试 Server 是否实现了 Picker 接口
-var _ Picker = (*Server)(nil)

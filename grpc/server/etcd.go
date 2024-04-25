@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/1055373165/Distributed_KV_Store/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
@@ -16,7 +16,7 @@ const ttl = 10
 var etcdClient *clientv3.Client
 
 func etcdRegister(addr string) error {
-	log.Printf("etcdRegister %s\b", addr)
+	logger.Logger.Debugf("etcdRegister %s\b", addr)
 	etcdClient, err := clientv3.NewFromURL(etcdUrl)
 
 	if err != nil {
@@ -34,6 +34,7 @@ func etcdRegister(addr string) error {
 	if err != nil {
 		return err
 	}
+
 	//etcdClient.KeepAlive(context.TODO(), lease.ID)
 	alive, err := etcdClient.KeepAlive(context.TODO(), lease.ID)
 	if err != nil {
@@ -43,7 +44,6 @@ func etcdRegister(addr string) error {
 	go func() {
 		for {
 			<-alive
-			fmt.Println("etcd server keep alive")
 		}
 	}()
 
@@ -51,7 +51,7 @@ func etcdRegister(addr string) error {
 }
 
 func etcdUnRegister(addr string) error {
-	log.Printf("etcdUnRegister %s\b", addr)
+	logger.Logger.Debugf("etcdUnRegister %s\b", addr)
 	if etcdClient != nil {
 		em, err := endpoints.NewManager(etcdClient, serviceName)
 		if err != nil {

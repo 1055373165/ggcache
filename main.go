@@ -14,32 +14,33 @@ var (
 	port = flag.Int("port", 9999, "port")
 )
 
+// 运行之前先运行 etcd/server_register_to_etcd 三个 put 将服务地址打入 etcd
 func main() {
 	conf.Init()
 	flag.Parse()
-	// 新建 cache 实例
+
 	g := group.NewGroupInstance("scores")
 
-	// New 一个自己实现的服务实例
 	addr := fmt.Sprintf("localhost:%d", *port)
 	svr, err := group.NewServer(addr)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	// 设置同伴节点包括自己（同伴的地址从 etcd 中获取）
+	// put clusters/nodeadress nodeadress
 	addrs, err := services.GetPeers("clusters")
-	if err != nil { // 如果查询失败使用默认的地址
+	if err != nil {
 		addrs = []string{"localhost:9999"}
 	}
-	fmt.Println("从 etcd 处获取的 server 地址", addrs)
-	// 将节点打到哈希环上
+
+	// Place the node on the hash ring
 	svr.SetPeers(addrs)
-	// 为 Group 注册服务 Picker
+	// Register the service Picker for Group
 	g.RegisterServer(svr)
 	log.Println("groupcache is running at ", addr)
 
-	// 启动服务（注册服务至 etcd、计算一致性 hash）
+	// Start the service (register the service to etcd, calculate consistent hash)
+	// Our Service Name is groupcache
 	err = svr.Start()
 	if err != nil {
 		log.Fatal(err)

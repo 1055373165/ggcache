@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/log v0.2.4
 	github.com/joho/godotenv v1.5.1
 	go.etcd.io/etcd/client/v3 v3.5.9
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.4
@@ -34,10 +34,10 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230526161137-0005af68ea54 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230525234035-dd9d682886f9 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
+	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
+	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 )

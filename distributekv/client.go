@@ -13,22 +13,21 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// client 模块实现了 groupcache 访问其他远程节点从而获取缓存的能力
+// The client module implements groupcache's ability to access other remote nodes to fetch caches.
 type client struct {
-	name string // 服务名称 gcache/ip:addr
+	serviceName string // 服务名称 groupcache/ip:addr
 }
 
-// Fetch 从 remote peer 获取对应的缓存值
+// Fetch gets the corresponding cache value from remote peer
 func (c *client) Fetch(group string, key string) ([]byte, error) {
-	// 创建一个 etcd client
 	cli, err := clientv3.New(services.DefaultEtcdConfig)
 	if err != nil {
 		return nil, err
 	}
 	defer cli.Close()
 
-	// 发现服务，取得与服务的链接
-	conn, err := services.EtcdDial(cli, c.name)
+	// Discover services and obtain connection to services
+	conn, err := services.EtcdDial(cli, c.serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -43,14 +42,14 @@ func (c *client) Fetch(group string, key string) ([]byte, error) {
 		Key:   key,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not get %s/%s from perr %s", group, key, c.name)
+		return nil, fmt.Errorf("could not get %s/%s from perr %s", group, key, c.serviceName)
 	}
 
 	return resp.Value, nil
 }
 
 func NewClient(service string) *client {
-	return &client{name: service}
+	return &client{serviceName: service}
 }
 
 // 测试 client 是否实现了 Fetcher 接口

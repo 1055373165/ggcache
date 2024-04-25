@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const ErrRPCCallNotFound = "rpc error: code = Unknown desc = record not found"
+
 func main() {
 	conf.Init()
 	cli, err := clientv3.New(clientv3.Config{
@@ -29,8 +31,8 @@ func main() {
 		logger.Logger.Error("从 etcd 获取 grpc 通道失败")
 		return
 	}
-	logger.Logger.Info("从 etcd 获取 grpc 通道成功")
 
+	logger.Logger.Info("从 etcd 获取服务实例地址")
 	addr := string(resp.Kvs[0].Value)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
@@ -39,10 +41,15 @@ func main() {
 	}
 	client_stub := pb.NewGroupCacheClient(conn)
 
-	response, err := client_stub.Get(ctx, &pb.GetRequest{Key: "scores张三", Group: "scores"})
-	if err != nil {
-		logger.Logger.Info("没有查询到这个人的记录", err.Error())
-		return
+	names := []string{"张三", "1", "2", "3", "王五", "李四", "不存在1", "不存在2"}
+	for _, name := range names {
+		response, err := client_stub.Get(ctx, &pb.GetRequest{Key: name, Group: "scores"})
+		if err != nil && err.Error() == ErrRPCCallNotFound {
+			logger.Logger.Infof("没有查询到学生 '%s' 的成绩, rpc 调用返回的错误信息: %v", name, err.Error())
+		} else if err != nil {
+			panic(err)
+		}
+		logger.Logger.Infof("成功从 RPC 返回学生 %s 分数的调用结果：%s\n", name, string(response.GetValue()))
 	}
-	logger.Logger.Infof("成功从 RPC 返回调用结果：%s\n", string(response.GetValue()))
+
 }

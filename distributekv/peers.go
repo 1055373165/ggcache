@@ -1,11 +1,11 @@
 package distributekv
 
-// Picker 定义了获取分布式节点的能力
+// Picker defines the ability to obtain distributed nodes
 type Picker interface {
 	Pick(key string) (Fetcher, bool)
 }
 
-// Fetcher 定义了从远端获取缓存的能力，所以每个 Peer 都应实现这个接口
+// Fetcher defines the ability to obtain cache from the remote end, so each Peer should implement this interface
 type Fetcher interface {
 	Fetch(group string, key string) ([]byte, error)
 }
