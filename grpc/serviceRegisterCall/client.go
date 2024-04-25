@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/1055373165/Distributed_KV_Store/conf"
 	pb "github.com/1055373165/Distributed_KV_Store/grpc/groupcachepb"
@@ -16,8 +15,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const etcdUrl = "http://localhost:2379"
-const serviceName = "groupcache"
+var (
+	etcdUrl     = "http://localhost:2379"
+	serviceName = "groupcache"
+)
+
+const ErrRPCCallNotFound = "rpc error: code = Unknown desc = record not found"
 
 func main() {
 	//bd := &ChihuoBuilder{addrs: map[string][]string{"/api": []string{"localhost:8001", "localhost:8002", "localhost:8003"}}}
@@ -40,41 +43,26 @@ func main() {
 
 	ServerClient := pb.NewGroupCacheClient(conn)
 
+	names := []string{}
+	for i := 0; i < 500; i++ {
+		names = append(names, fmt.Sprintf("%d", i))
+	}
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		helloRespone, err := ServerClient.Get(ctx, &pb.GetRequest{
-			Group: "scores",
-			Key:   "李四",
-		})
-		if err != nil {
-			fmt.Printf("err: %v", err)
-			return
-		}
-		logger.Logger.Infof("查询到 %s 的分数为：%v🍪", "李四", helloRespone)
-		helloRespone, err = ServerClient.Get(ctx, &pb.GetRequest{
-			Group: "scores",
-			Key:   "张三",
-		})
-		if err != nil {
-			fmt.Printf("err: %v", err)
-			return
-		}
-		logger.Logger.Infof("查询到 %s 的分数为：%v🍪", "张三", helloRespone)
-		helloRespone, err = ServerClient.Get(ctx, &pb.GetRequest{
-			Group: "scores",
-			Key:   "不存在",
-		})
-		if err != nil {
-			if err.Error() == "rpc error: code = Unknown desc = record not found" {
-				logger.Logger.Info("查询不到学生 '不存在' 的成绩")
-				time.Sleep(500 * time.Millisecond)
-				continue
+		for _, name := range names {
+			resp, err := ServerClient.Get(context.Background(), &pb.GetRequest{
+				Group: "scores",
+				Key:   "李四",
+			})
+			if err != nil {
+				if ErrRPCCallNotFound != err.Error() {
+					logger.Logger.Fatalf("rpc call failed, err: %v", err)
+					return
+				} else {
+					logger.Logger.Warnf("没有查询到学生 %s 的成绩", name)
+				}
 			} else {
-				return
+				logger.Logger.Infof("rpc 调用成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 			}
 		}
-		logger.Logger.Infof("查询到的分数为：%v🍪", helloRespone)
-		time.Sleep(500 * time.Millisecond)
 	}
 }
