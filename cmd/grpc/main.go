@@ -6,9 +6,10 @@ import (
 	"log"
 
 	"ggcache/config"
-	"ggcache/internal/middleware/etcd"
-	"ggcache/internal/pkg/student/dao"
+	etcdservice "ggcache/internal/middleware/etcd"
+	dao "ggcache/internal/pkg/student/dao"
 	"ggcache/internal/service"
+	"ggcache/utils/logger"
 )
 
 var (
@@ -20,27 +21,26 @@ func main() {
 	config.InitConfig()
 	dao.InitDB()
 	flag.Parse()
-
 	addr := fmt.Sprintf("localhost:%d", *port)
-	groupManager := service.NewGroupManager([]string{"scores", "student"}, addr)
+
+	groupManager := service.NewGroupManager([]string{"scores"}, addr)
 	svr, err := service.NewServer(addr)
 	if err != nil {
 		panic(err)
 	}
 
-	// put clusters/nodeadress nodeadress
-	addrs, err := etcd.GetPeers("clusters")
+	// put clusters/nodeAddress nodeAddress
+	addrs, err := etcdservice.GetPeers("clusters")
 	if err != nil {
-		panic(err)
-	}
-	if len(addrs) == 0 {
 		addrs = []string{"localhost:9999"}
 	}
+	logger.LogrusObj.Infof("获取到用于设置一致性哈希环的地址列表: %v", addrs)
 	// Place the node on the hash ring
 	svr.SetPeers(addrs)
+
 	// Register the service Picker for Group
 	groupManager["scores"].RegisterServer(svr)
-	log.Println("group scores is running at ", addr)
+	logger.LogrusObj.Debug("groupcache is running at ", addr)
 
 	// Start the service (register the service to etcd, calculate consistent hash)
 	// Our Service Name is groupcache

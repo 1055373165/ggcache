@@ -1,0 +1,41 @@
+mysql:
+    driverName: mysql
+    host: localhost
+    port: 3306
+    database: kv
+    username: root  
+    password: 1234
+    charset: utf8mb4
+    parsetime: True
+    loc: Local
+
+etcd:
+    addresslist: 
+        - localhost:2379
+    ttl: 5
+
+
+services:
+    gateway:
+        name: gateway
+        loadBalance: true
+        addr:
+            - localhost:10005
+    student:
+        name: student
+        loadBalance: false
+        addr: 
+            - localhost:10006
+    ggcache:
+        name: ggcache
+        addr:
+            - localhost:9999
+            - localhost:10000
+            - localhost:10001
+
+
+domain:
+    student:
+        name: student
+    ggcache:
+        name: ggcache

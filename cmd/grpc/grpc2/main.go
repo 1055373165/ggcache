@@ -3,16 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"ggcache/config"
 	"log"
 
-	"ggcache/config"
 	"ggcache/internal/middleware/etcd"
 	"ggcache/internal/pkg/student/dao"
 	"ggcache/internal/service"
 )
 
 var (
-	port = flag.Int("port", 9999, "port")
+	port = flag.Int("port", 10000, "port")
+	m    = map[int]string{
+		10000: "localhost:10000",
+		10001: "localhost:10001",
+		10002: "localhost:10002",
+	}
 )
 
 // 运行之前先运行 etcd/server_register_to_etcd 三个 put 将服务地址打入 etcd
@@ -21,8 +26,9 @@ func main() {
 	dao.InitDB()
 	flag.Parse()
 
-	addr := fmt.Sprintf("localhost:%d", *port)
+	addr := fmt.Sprintf("%s:%d", m[*port], *port)
 	groupManager := service.NewGroupManager([]string{"scores", "student"}, addr)
+
 	svr, err := service.NewServer(addr)
 	if err != nil {
 		panic(err)
@@ -31,11 +37,9 @@ func main() {
 	// put clusters/nodeadress nodeadress
 	addrs, err := etcd.GetPeers("clusters")
 	if err != nil {
-		panic(err)
+		addrs = []string{"localhost:10000"}
 	}
-	if len(addrs) == 0 {
-		addrs = []string{"localhost:9999"}
-	}
+
 	// Place the node on the hash ring
 	svr.SetPeers(addrs)
 	// Register the service Picker for Group
