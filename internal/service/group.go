@@ -19,7 +19,7 @@ func NewGroupManager(groupnames []string, currentPeerAddr string) map[string]*Gr
 
 	// 为每个 group 构造一个 Group 实例
 	for i := 0; i < len(groupnames); i++ {
-		g := NewGroup(groupnames[i], 100*2*20, RetrieveFunc(func(key string) ([]byte, error) {
+		g := NewGroup(groupnames[i], "lru", 100*2*20, RetrieveFunc(func(key string) ([]byte, error) {
 			start := time.Now()
 			dao := dao.NewStudentDao(context.Background())
 			stus, err := dao.ShowStudentInfo(&pb.StudentRequest{

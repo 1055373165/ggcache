@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
 
+	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery2"
 	"github.com/1055373165/ggcache/internal/service/consistenthash"
 	"github.com/1055373165/ggcache/utils/logger"
 	"github.com/1055373165/ggcache/utils/validate"
@@ -106,7 +107,7 @@ func (s *Server) Start() error {
 
 	go func() {
 		// This operation is blocking and therefore completed asynchronously in a goroutine
-		err := Register("GroupCache", s.Addr, s.stopsSignal, s)
+		err := discovery2.Register("GroupCache", s.Addr, s.stopsSignal)
 		if err != nil {
 			logger.LogrusObj.Error(err.Error())
 		}

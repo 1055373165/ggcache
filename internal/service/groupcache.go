@@ -27,7 +27,7 @@ type Group struct {
 }
 
 // NewGroup Creates a new cache space.
-func NewGroup(name string, maxBytes int64, retriever Retriever) *Group {
+func NewGroup(name string, strategy string, maxBytes int64, retriever Retriever) *Group {
 	if retriever == nil {
 		panic("Group Retriver must be existed!")
 	}
@@ -38,7 +38,7 @@ func NewGroup(name string, maxBytes int64, retriever Retriever) *Group {
 
 	g := &Group{
 		name:      name,
-		cache:     newCache(maxBytes),
+		cache:     newCache(strategy, maxBytes),
 		retriever: retriever,
 		flight:    singleflight.NewSingleFlight(10 * time.Second),
 	}
