@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery1"
 	"github.com/1055373165/ggcache/internal/pkg/student/dao"
 	"github.com/1055373165/ggcache/internal/service"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	"google.golang.org/grpc"
 )
@@ -48,7 +48,7 @@ func main() {
 
 func UnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		log.Printf("call %s\n", info.FullMethod)
+		logger.LogrusObj.Warnf("call %s", info.FullMethod)
 		resp, err = handler(ctx, req)
 		return resp, err
 	}
@@ -80,7 +80,7 @@ func Start(svr *service.Server) {
 		panic(err)
 	}
 
-	log.Println("groupcache is running at ", svr.Addr)
+	logger.LogrusObj.Debugf("ggcache service is running at ", svr.Addr)
 	if err := grpcServer.Serve(lis); err != nil {
 		panic(err)
 	}
