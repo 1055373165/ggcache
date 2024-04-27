@@ -2,16 +2,16 @@
 
 ## 项目介绍
 
-支持 HTTP、RPC 和服务注册发现的分布式键值缓存系统；
+支持 `HTTP`、`RPC` 和服务注册发现的分布式键值缓存系统；
 
 ## 功能介绍
-- 支持 RPC （gRPC 框架）
-- 支持多种缓存淘汰策略替换（策略类模式：LRU、LFU、FIFO）
-- 并发访问控制（singleFlight 机制）
+- 支持 RPC （`gRPC` 框架）
+- 支持多种缓存淘汰策略替换（策略类模式：`LRU`、`LFU`、`FIFO`）
+- 并发访问控制（`singleFlight`机制）
 - 负载均衡策略（一致性哈希算法）
 - 键值分组管理、键值分布式存储（扩展系统吞吐量和可用性）
-- 外部存储高可用（etcd 集群模式）
-- 服务注册发现（etcd endpoint manager）
+- 外部存储高可用（`etcd` 集群模式）
+- 服务注册发现（`etcd endpoint manager`）
 - 提供了自动化测试脚本和相对完整的测试用例（使用查询学生分数进行模拟）
 
 # 项目结构
@@ -125,7 +125,7 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 - etcd 服务（"127.0.0.1:2379"）
 - mysql 服务（"127.0.0.1:3306"）
 - etcd 集群（高可用）
-    - internal/middleware/etcd/cluster 中有使用说明
+    - `internal/middleware/etcd/cluster` 中有使用说明
 
 ## 运行测试
 
@@ -143,30 +143,35 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 
 3. 执行 rpc call 测试
 
-- go run /script/test/grpc1/grpc_client1.go
-- go run /script/test/grpc2/grpc_client2.go
+- `go run /script/test/grpc1/grpc_client1.go`
+- `go run /script/test/grpc2/grpc_client2.go`
 
 > http 测试与上面类似
 
 # 功能优化方向（todo）
-1. 添加缓存命中率指标（动态调整缓存容量）
-2. 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要；实现思路一：监听 server 启停信号，使用 endpoint manager 管理；思路 2：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
-3. 增加更多的负载均衡策略（下一个准备添加 arc 算法和 LRU2 算法升级）
-4. 增加请求限流（令牌桶算法）
-5. 实现缓存和数据库的一致性（增加消息队列异步处理）
+- 添加缓存命中率指标（动态调整缓存容量）
+- 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要）；
+    - 实现思路一：监听 server 启停信号，使用 `endpoint manager`管理
+    - 实现思路二：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
+- 增加更多的负载均衡策略
+    - 添加 `arc`算法
+    - `LRU2` 算法升级
+- 增加请求限流（令牌桶算法）
+- 实现缓存和数据库的一致性（增加消息队列异步处理）
+- ......
 
 # 参考资源链接
-1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 GeeCache
+1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 `GeeCache`
 2. [gcache](https://github.com/bluele/gcache) 缓存淘汰策略（基于策略模式）
-3. [groupcache](https://github.com/golang/groupcache) 常作为 memcached 替代
-4. [grpc](https://grpc.io/docs/languages/go/quickstart/) gRPC 官方文档
-5. [proto3](https://protobuf.dev/programming-guides/proto3/) protobuf 官方文档
-6. [protobuf](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862) protobuf 编码原理
-7. [protoscope](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5) proto 个人学习笔记
+3. [groupcache](https://github.com/golang/groupcache) 常作为 `memcached` 替代
+4. [grpc](https://grpc.io/docs/languages/go/quickstart/) `gRPC` 官方文档
+5. [proto3](https://protobuf.dev/programming-guides/proto3/) `protobuf` 官方文档
+6. [protobuf](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862) `protobuf` 编码原理
+7. [protoscope](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5) `protobuf` 个人学习笔记
 8. [etcd](https://etcd.io/docs/v3.5/) 官方文档
-9. [goreman](https://github.com/mattn/goreman) etcd 集群搭建
+9. [goreman](https://github.com/mattn/goreman) `etcd` 集群搭建
 10. [shell](https://www.shellscript.sh/) shell 脚本
 11. [gorm](https://gorm.io/docs/models.html) 快速搭建后端数据库
 12. [air](https://github.com/cosmtrek/air) 动态加载（方便调试）
-13. [log](https://github.com/charmbracelet/log) 极简、多彩的 Go 日志库
+13. [log](https://github.com/charmbracelet/log) 极简、多彩的 `Go` 日志库
 
