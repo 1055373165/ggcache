@@ -2,26 +2,17 @@
 
 ## 项目介绍
 
-支持 HTTP、RPC 和服务注册发现的分布式键值存储系统；
+支持 HTTP、RPC 和服务注册发现的分布式键值缓存系统；
 
-本轮子项目参考了 geecache、groupcache、gcache 等项目，对项目中每个模块的设计和实现进行了详细分析（共 9 个部分，参见项目分析部分）；
-
-## 功能扩展
-- 支持 RPC 
-- 支持多种缓存淘汰策略（LRU、LFU、FIFO）
-- 支持服务注册发现（etcd cluster）
-- 支持从 etcd 获取服务节点信息
-- 支持全局日志处理
-- 提供了自动化测试脚本
-
-## 功能优化方向（todo）
-
-1. 添加缓存命中率指标（动态调整缓存容量）
-2. 自动检测服务节点信息变化，动态增删节点
-3. 增加更多的负载均衡策略（轮询等）
-4. 增加请求限流（令牌桶算法）
-5. 增加 ARC 缓存淘汰算法
-...
+## 功能介绍
+- 支持 RPC （gRPC 框架）
+- 支持多种缓存淘汰策略替换（策略类模式：LRU、LFU、FIFO）
+- 并发访问控制（singleFlight 机制）
+- 负载均衡策略（一致性哈希算法）
+- 键值分组管理、键值分布式存储（扩展系统吞吐量和可用性）
+- 外部存储高可用（etcd 集群模式）
+- 服务注册发现（etcd endpoint manager）
+- 提供了自动化测试脚本和相对完整的测试用例（使用查询学生分数进行模拟）
 
 # 项目结构
 ```
@@ -91,7 +82,7 @@
 │       ├── http_helper.go
 │       ├── http_picker.go
 │       ├── interface.go
-│       ├── policy
+│       ├── policy    
 │       ├── register.go
 │       └── singleflight
 │           └── singleflight.go
@@ -116,6 +107,18 @@
     └── validate
 49 directories, 64 files
 ```
+
+
+## 系统运行
+
+### 预热阶段
+https://github.com/1055373165/ggcache/assets/33158355/bcd6d2e7-979b-4b1a-b021-b09e654f4bf0
+
+
+### 工作阶段
+https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e48a84f43e19
+
+
 
 
 ## 使用
@@ -248,6 +251,13 @@ RPC 请求由第一个节点（localhost:9999）接收到，一致性 hash 模�
 ```bash
 3:09PM INFO <rpcCallClient/client.go:47> Baking 🍪 : 成功从 RPC 返回调用结果：100
 ```
+
+## 功能优化方向（todo）
+1. 添加缓存命中率指标（动态调整缓存容量）
+2. 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要；实现思路一：监听 server 启停信号，使用 endpoint manager 管理；思路 2：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
+3. 增加更多的负载均衡策略（下一个准备添加 arc 算法和 LRU2 算法升级）
+4. 增加请求限流（令牌桶算法）
+5. 实现缓存和数据库的一致性（增加消息队列异步处理）
 
 ## 参考资源链接
 1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 GeeCache
