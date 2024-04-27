@@ -4,6 +4,7 @@ package lru
 
 import (
 	"container/list"
+	"sync"
 	"time"
 
 	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
@@ -13,6 +14,7 @@ type LRUCache struct {
 	maxBytes int64
 	nbytes   int64
 	root     *list.List
+	mu       sync.RWMutex
 	cache    map[string]*list.Element
 	// optional and executed when an entry is purged.
 	// 回调函数，采用依赖注入的方式，该函数用于处理从缓存中淘汰的数据
@@ -24,19 +26,24 @@ func NewLRUCache(maxBytes int64, onEvicted func(string, interfaces.Value)) *LRUC
 		maxBytes:  maxBytes,
 		root:      list.New(),
 		cache:     make(map[string]*list.Element),
-		OnEvicted: onEvicted,
-	}
+		OnEvicted: onEvicted}
 }
 
 func (c *LRUCache) RemoveOldest() {
 	ele := c.root.Front()
 	if ele != nil {
+		c.mu.Lock()
+		if ele == nil {
+			c.mu.Unlock()
+			return
+		}
 		kv := c.root.Remove(ele).(*interfaces.Entry)
 		delete(c.cache, kv.Key)
 		c.nbytes -= int64(len(kv.Key)) + int64(kv.Value.Len())
 		if c.OnEvicted != nil {
 			c.OnEvicted(kv.Key, kv.Value)
 		}
+		c.mu.Unlock()
 	}
 }
 

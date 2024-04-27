@@ -1,6 +1,7 @@
 #! /bin/bash
 
 
+# 废弃：v3 版本无需执行改脚本
 # 所有测试脚本均默认在 script 目录下运行
 # test1.sh and test2.sh and test3.sh
 # 按顺序执行 test1 -> test2 -> test3

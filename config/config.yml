@@ -3,19 +3,16 @@ mysql:
     host: localhost
     port: 3306
     database: kv
-    username: root  
+    username: root
     password: 1234
     charset: utf8mb4
-    parsetime: True
-    loc: Local
 
 etcd:
-    addresslist: 
+    address: 
         - localhost:2379
         - localhost:22379
         - localhost:32379
     ttl: 5
-
 
 services:
     gateway:
@@ -28,16 +25,15 @@ services:
         loadBalance: false
         addr: 
             - localhost:10006
-    ggcache:
-        name: ggcache
+    groupcache:
+        name: GroupCache
         addr:
             - localhost:9999
             - localhost:10000
             - localhost:10001
 
-
 domain:
     student:
         name: student
-    ggcache:
-        name: ggcache
+    groupcache:
+        name: GroupCache

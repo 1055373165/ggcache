@@ -3,49 +3,48 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 
 	"github.com/1055373165/ggcache/config"
-	"github.com/1055373165/ggcache/internal/middleware/etcd"
+	conf "github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
 	"github.com/1055373165/ggcache/internal/pkg/student/dao"
 	"github.com/1055373165/ggcache/internal/service"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 var (
-	port = flag.Int("port", 9999, "port")
+	port = flag.Int("port", 9999, "service node port")
 )
 
-// 运行之前先运行 etcd/server_register_to_etcd 三个 put 将服务地址打入 etcd
 func main() {
-	config.InitConfig()
+	conf.InitConfig()
 	dao.InitDB()
 	flag.Parse()
 
-	addr := fmt.Sprintf("localhost:%d", *port)
-	groupManager := service.NewGroupManager([]string{"scores", "student"}, addr)
-	svr, err := service.NewServer(addr)
+	// grpc node local service address
+	serviceAddr := fmt.Sprintf("localhost:%d", *port)
+	gm := service.NewGroupManager([]string{"scores", "website"}, serviceAddr)
+
+	// get a grpc service instance（通过通信来共享内存而不是通过共享内存来通信）
+	updateChan := make(chan bool)
+	svr, err := service.NewServer(updateChan, serviceAddr)
 	if err != nil {
-		panic(err)
+		logger.LogrusObj.Errorf("acquire grpc server instance failed, %v", err)
+		return
 	}
 
-	// put clusters/nodeadress nodeadress
-	addrs, err := etcd.GetPeers("clusters")
-	if err != nil {
-		panic(err)
-	}
-	if len(addrs) == 0 {
-		addrs = []string{"localhost:9999"}
-	}
-	// Place the node on the hash ring
-	svr.SetPeers(addrs)
-	// Register the service Picker for Group
-	groupManager["scores"].RegisterServer(svr)
-	log.Println("group scores is running at ", addr)
+	go discovery3.DynamicServices(updateChan, config.Conf.Services["groupcache"].Name)
 
-	// Start the service (register the service to etcd, calculate consistent hash)
-	// Our Service Name is groupcache
-	err = svr.Start()
+	// Server implemented Pick interface, register a node selector for ggcache
+	peers, err := discovery3.ListServicePeers(config.Conf.Services["groupcache"].Name)
 	if err != nil {
-		log.Fatal(err)
+		peers = []string{"serviceAddr"}
 	}
+
+	svr.SetPeers(peers)
+
+	gm["scores"].RegisterServer(svr)
+
+	// start grpc service
+	svr.Start()
 }

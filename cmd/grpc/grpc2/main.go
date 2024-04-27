@@ -30,7 +30,8 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", m[*port], *port)
 	groupManager := service.NewGroupManager([]string{"scores", "student"}, addr)
 
-	svr, err := service.NewServer(addr)
+	updateChan := make(chan bool)
+	svr, err := service.NewServer(updateChan, addr)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +50,7 @@ func main() {
 
 	// Start the service (register the service to etcd, calculate consistent hash)
 	// Our Service Name is groupcache
-	err = svr.Start()
+	svr.Start()
 	if err != nil {
 		log.Fatal(err)
 	}

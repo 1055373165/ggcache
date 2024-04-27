@@ -3,10 +3,9 @@ package dao
 import (
 	"context"
 	"fmt"
-	"math/rand"
+
 	"strings"
 
-	stuPb "github.com/1055373165/ggcache/api/studentpb"
 	"github.com/1055373165/ggcache/config"
 
 	logger2 "github.com/1055373165/ggcache/utils/logger"
@@ -27,11 +26,9 @@ func InitDB() {
 	username := mConfig.UserName
 	password := mConfig.Password
 	charset := mConfig.Charset
-	parseTime := mConfig.ParseTime
-	location := mConfig.Local
 
 	// username:password@tcp(host:port)/database?charset=xx&parseTime=xx&loc=xx
-	dsn := strings.Join([]string{username, ":", password, "@tcp(", host, ":", port, ")/", database, "?charset=", charset, "&parseTime=", parseTime, "&loc=", location}, "")
+	dsn := strings.Join([]string{username, ":", password, "@tcp(", host, ":", port, ")/", database, "?charset=", charset, "&parseTime=", "true", "&loc=", "Local"}, "")
 	err := Database(dsn)
 	if err != nil {
 		fmt.Println(err)
@@ -78,22 +75,4 @@ func Database(connStr string) error {
 func NewDBClient(ctx context.Context) *gorm.DB {
 	db := _db
 	return db.WithContext(ctx)
-}
-
-func InitilizeDB() {
-	names := []string{"张三", "李四", "王五", "赵六"}
-	d := NewStudentDao(context.Background())
-	for _, name := range names {
-		d.CreateStudent(&stuPb.StudentRequest{
-			Name:  name,
-			Score: 100,
-		})
-	}
-
-	for i := 0; i < 1000; i++ {
-		d.CreateStudent(&stuPb.StudentRequest{
-			Name:  fmt.Sprintf("%d", i),
-			Score: float32(rand.Int31n(10000)),
-		})
-	}
 }

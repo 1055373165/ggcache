@@ -1,7 +1,7 @@
 #! /bin/bash
 
-# 确保所有脚本拥有执行权限
+# 确保脚本拥有执行权限，请在 script 目录下执行
 
-# chmod +x test1.sh test2.sh test3.sh
+# chmod +x test.sh
 
 # 命令行输入 ll 查看是否具有执行权限

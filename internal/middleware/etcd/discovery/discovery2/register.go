@@ -28,6 +28,7 @@ func Register(service string, addr string, stop chan error) error {
 	leaseId := resp.ID
 
 	// Associate service address with lease
+	// 注意：如果将重建哈希环操作放在 etcdAdd 之后，那么就无需用户手动 put 实例地址了
 	err = etcdAdd(cli, leaseId, service, addr)
 	if err != nil {
 		panic(err)
@@ -40,7 +41,7 @@ func Register(service string, addr string, stop chan error) error {
 	}
 
 	manager, _ := endpoints.NewManager(cli, service)
-	ch2, _ := manager.NewWatchChannel(context.Background())
+	watchChan, _ := manager.NewWatchChannel(context.Background())
 
 	for {
 		select {
@@ -58,7 +59,7 @@ func Register(service string, addr string, stop chan error) error {
 				_, err := cli.Revoke(context.Background(), leaseId)
 				return err
 			}
-		case <-ch2:
+		case <-watchChan:
 			// map[string]Endpoint
 			key2EndpointMap, _ := manager.List(context.Background())
 			var addrs []string
@@ -83,7 +84,7 @@ func etcdAdd(client *clientv3.Client, leaseId clientv3.LeaseID, service string, 
 			Metadata is the information associated with Addr, which may be used to make load balancing decision.
 			Endpoint represents a single address the connection can be established with.
 		*/
-		endpoints.Endpoint{Addr: addr, Metadata: "ggcache services"},
+		endpoints.Endpoint{Addr: addr, Metadata: "GroupCache services"},
 		clientv3.WithLease(leaseId))
 }
 

@@ -14,28 +14,24 @@ var Conf *Config
 var DefaultEtcdConfig clientv3.Config
 
 type Config struct {
-	Mysql    *Mysql              `yaml:"server"`
+	Mysql    *MySQL              `yaml:"mysql"`
 	Etcd     *Etcd               `yaml:"etcd"`
 	Services map[string]*Service `yaml:"services"`
 	Domain   map[string]*Domain  `yaml:"domain"`
-	Server   Server
 }
 
-type Mysql struct {
-	DriverName string `yaml:"port"`
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	Database   string `yaml:"database"`
-	UserName   string `yaml:"username"`
-	Password   string `yaml:"password"`
-	Charset    string `yaml:"charset"`
-	ParseTime  string `yaml:"parsetime"`
-	Local      string `yaml:"loc"`
+type MySQL struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Database string `yaml:"database"`
+	UserName string `yaml:"username"`
+	Password string `yaml:"password"`
+	Charset  string `yaml:"charset"`
 }
 
 type Etcd struct {
-	AddressList []string `yaml:"addresslist"`
-	TimeToLive  int      `yaml:"ttl"`
+	Address []string `yaml:"address"`
+	TTL     int      `yaml:"ttl"`
 }
 
 type Service struct {
@@ -48,12 +44,6 @@ type Domain struct {
 	Name string `yaml:"name"`
 }
 
-type Server struct {
-	Port      string `yaml:"port"`
-	Version   string `yaml:"version"`
-	JwtSecret string `yaml:"jwtSecret"`
-}
-
 func InitConfig() {
 	rootDir := findRootDir()
 	viper.SetConfigName("config")
@@ -63,17 +53,19 @@ func InitConfig() {
 	if err != nil {
 		panic(err)
 	}
+
 	// parse into Conf object
 	err = viper.Unmarshal(&Conf)
 	if err != nil {
 		panic(err)
 	}
+
 	InitClientV3Config()
 }
 
 func InitClientV3Config() {
 	DefaultEtcdConfig = clientv3.Config{
-		Endpoints:   Conf.Etcd.AddressList,
+		Endpoints:   Conf.Etcd.Address,
 		DialTimeout: 5 * time.Second,
 	}
 }

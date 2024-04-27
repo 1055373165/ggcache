@@ -31,7 +31,9 @@ func main() {
 	addr := fmt.Sprintf("localhost:%d", *port)
 
 	groupManager := service.NewGroupManager([]string{"scores", "student"}, addr)
-	svr, err := service.NewServer(addr)
+
+	updateChan := make(chan bool)
+	svr, err := service.NewServer(updateChan, addr)
 	if err != nil {
 		panic(err)
 	}
