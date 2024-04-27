@@ -147,6 +147,7 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 - `go run /script/test/grpc2/grpc_client2.go`
 
 > http 测试与上面类似
+> 在 script/test.md 有完整的测试介绍
 
 # 功能优化方向（todo）
 - 添加缓存命中率指标（动态调整缓存容量）
