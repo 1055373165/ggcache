@@ -20,94 +20,80 @@
 ├── README.md
 ├── api
 │   ├── ggcache
-│   ├── groupcachepb
-│   │   ├── groupcache.pb.go
-│   │   ├── groupcache.proto
-│   │   ├── groupcache_grpc.pb.go
-│   ├── studentpb
-│   │   ├── student.pb.go
-│   │   ├── student.proto
-│   │   └── student_grpc.pb.go
-│   └── website
-│       └── website.proto
+│   ├── groupcachepb        // grpc server idl.
+│   ├── studentpb           // business idl.
+│   └── website             
 ├── assets
 │   ├── image
 │   └── sql
 ├── cmd
 │   ├── grpc
-│   │   ├── grpc1
+│   │   ├── grpc1           // grpc server implement1
 │   │   │   └── main.go  
-│   │   ├── grpc2
+│   │   ├── grpc2           // grpc server implement2
 │   │   │   └── main.go
-│   │   └── main.go
-│   └── http
+│   │   └── main.go         // grpc server implement
+│   └── http                // http server implement
 │       └── main.go
-├── config
+├── config                  // global config manage
 │   ├── config.go
 │   └── config.yml
 ├── go.mod
 ├── go.sum
-├── internal
-│   ├── middleware
-│   │   └── etcd
-│   │       ├── cluster
-│   │       ├── discovery
+├── internal                
+│   ├── middleware            // depend on
+│   │   └── etcd            
+│   │       ├── cluster       // goreman etcd cluster manage
+│   │       ├── discovery     // service registration discovery (three implement)
 │   │       ├── list_peers.go
-│   │       └── put
+│   │       └── put           // service instance address put
 │   ├── pkg
-│   │   ├── student
+│   │   ├── student           // business logic
 │   │   │   ├── dao
 │   │   │   ├── ecode
 │   │   │   ├── model
 │   │   │   └── service
-│   │   └── website
-│   └── service
-│       ├── byteview.go
-│       ├── cache.go
-│       ├── cachepurge
-│       │   ├── fifo
-│       │   ├── interfaces
+│   │   └── website          
+│   └── service              // grpc group cache service imp.
+│       ├── byteview.go      // read-only 
+│       ├── cache.go         // concurrency-safe caching imp.
+│       ├── cachepurge       // cache eviction algorithm implemented in strategy mode
+│       │   ├── fifo         
+│       │   ├── interfaces   // cache eviction algorithm interface abstract
 │       │   ├── lfu
 │       │   ├── lru
-│       │   └── purge.go
-│       ├── consistenthash
-│       │   ├── consistenthash.go
-│       │   └── constenthash_test.go
-│       ├── discover.go
-│       ├── group.go
-│       ├── groupcache.go
-│       ├── grpc_fetcher.go
-│       ├── grpc_picker.go
-│       ├── http_fetcher.go
-│       ├── http_helper.go
-│       ├── http_picker.go
-│       ├── interface.go
-│       ├── policy    
-│       ├── register.go
-│       └── singleflight
-│           └── singleflight.go
-├── main.go
-├── script
-│   ├── exec_test.sh
-│   ├── other
+│       │   └── purge.go     // export
+│       ├── consistenthash   // consistent hash algorithm for load balance
+│       ├── group.go         
+│       ├── groupcache.go    // group cache imp.
+│       ├── grpc_fetcher.go  // grpc proxy 
+│       ├── grpc_picker.go   // grpc peer selector
+│       ├── http_fetcher.go  // http proxy
+│       ├── http_helper.go   // http api server and http server start helper
+│       ├── http_picker.go   // http peer selector
+│       ├── interface.go     // grpc peer selector and grpc proxy abstract
+│       ├── policy           // old version cache eviction algorithm
+│       └── singleflight     // single flight concurrent access control
+├── main.go                  // grpc server default imp.
+├── script                   // grpc and http service test
 │   ├── prepare
-│   │   └── exec1.sh
-│   └── test
-│       ├── grpc1
-│       │   └── grpc_client1.go
-│       ├── grpc2
-│       │   └── grpc_client2.go
-│       └── http
-│           ├── http_test1.sh
-│           └── http_test2.sh
+│   ├── test
+│   │   ├── grpc1
+│   │   ├── grpc2
+│   │   └── http
+│   ├── test.md              // test step
+│   ├── test0.sh
+│   ├── test1.sh
+│   ├── test2.sh
+│   └── test3.sh
 └── utils
     ├── logger
-    ├── shutdown
+    ├── shutdown            // goroutine gracefully_shutdown
     ├── trace
-    └── validate
-49 directories, 64 files
-```
+    └── validate            // ip address validation
 
+49 directories, 66 files
+```
 
 # 系统运行
 
