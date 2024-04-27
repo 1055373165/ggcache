@@ -119,19 +119,7 @@
     └── validate            // ip address validation
 ```
 
-## 系统运行
-
-### 预热阶段
-https://github.com/1055373165/ggcache/assets/33158355/bcd6d2e7-979b-4b1a-b021-b09e654f4bf0
-
-
-
-### 工作阶段
-https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e48a84f43e19
-
-## 使用
-
-### 依赖
+## 依赖
 
 1. etcd 服务（"127.0.0.1:2379"）
 
@@ -152,38 +140,51 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 
 9. protobuf（序列化）
 
-### 运行测试
 
-1. 将服务实例地址注册到 etcd （外部统一存储中心）
+## 系统运行
 
-`./script/prepare/exec1.sh`
-  
-2. 启动三个 grpc server
+### 预热阶段
+https://github.com/1055373165/ggcache/assets/33158355/3215adb2-6615-481f-861d-6c1369179d7c
 
-- terminal1: `go run main.go -port 9999`
-- terminal2: `go run main.go -port 10000`
-- terminal3: `go run main.go -port 10001`
+1. 使用 goreman 启动 etcd 集群（3 个 etcd 节点），实现高可用的、强一致性的外部存储中心
 
-3. 执行 rpc call 测试
+2. 启动多个 grpc service 服务节点，可以在秒级获取到节点信息变化，快速收敛
 
-- `go run /script/test/grpc1/grpc_client1.go`
-- `go run /script/test/grpc2/grpc_client2.go`
+3. 启动多个 grpc client 客户端，不停地向 grpc 服务集群发送查询请求（其中特意添加了不存在的 key）
 
-> http 测试与上面类似
-> 在 script/test.md 有完整的测试介绍
-> 上面只是以三个节点为例，系统将 server port 使用命令行参数导入，因此可以自定义任意数量的 grpc server（前提是需要将它的服务地址率先导入 etcd）
+4. 每个节点刚启动时并没有缓存数据，都需要跑到后端数据库进行查询，实际上是对缓存进行预热
+
+### 工作阶段
+
+https://github.com/1055373165/ggcache/assets/33158355/7b95a2c2-98a5-40bd-8467-b19c55a3292e
+
+1. 某些节点的缓存预热完毕后，可以直接从缓存中返回结果，因此处理速度肉眼可见的变快了
+
+2. 发送终止信号给其中两个服务节点，正常工作节点不受影响，重新启动节点在加入后继续提供服务（后台会自动重建网络拓扑）
+
+3. 所有节点全部关闭，客户端重试机制生效，最大重试次数为 3 次（可配置），分别退避 1s、2s、4s，在重试期间，只有有一个节点完成重启可以立即返回结果
+
+4. 节点重启后，重新回到之前正常状态，节点间负责的 key 关系不会发生变化（hash 环上虚拟节点固定），因此不会导致大量缓存失效
+
+
+### 动态节点管理
+
+https://github.com/1055373165/ggcache/assets/33158355/1c771e10-c11c-493f-8488-a1cfa7e45f1e
+
+动态获取速度可自定义配置，因为一般情况下网络拓扑相对比较稳定，没有必要后台启动一个长轮询任务一直监听不太可能发生的事件，这对于系统性能是一种浪费。
+
 
 ## 功能优化方向（todo）
 
 1. 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要）
 
-- 实现思路一：监听 server 启停信号，使用 `endpoint manager`管理
+- 实现思路一：监听 server 启停信号，使用 `endpoint manager`管理✅
 
-- 实现思路二：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
+- 实现思路二：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）✅
     
 2. 添加缓存命中率指标（动态调整缓存容量）
 
-3. 负载均衡策略优化
+3. 负载均衡策略优化 ✅
 
 - 添加 `arc`算法
 
@@ -191,9 +192,14 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 
 4. 增加请求限流（令牌桶算法）
 
-5. 实现缓存和数据库的一致性（增加消息队列异步处理）
+5. 增加对不存在 key 的特殊处理 ✅
+
+6. 实现缓存和数据库的一致性（增加消息队列异步处理）（也可以通过缓存淘汰时的回调函数实现）
 
 ...
+
+<img width="401" alt="image" src="https://github.com/1055373165/ggcache/assets/33158355/f42d7b71-e56e-443e-bcfb-9d834f3ab5f4">
+
 
 ## 参考资源链接
 1. [Geektutu 分布式缓存 `GeeCache`](https://geektutu.com/post/geecache.html) 
