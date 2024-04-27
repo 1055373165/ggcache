@@ -4,6 +4,8 @@
 
 支持 `HTTP`、`RPC` 和服务注册发现的分布式键值缓存系统；
 
+- master 分支是最早的 v1 version
+
 ## 功能介绍
 - 支持 RPC （`gRPC` 框架）
 - 支持多种缓存淘汰策略替换（策略类模式：`LRU`、`LFU`、`FIFO`）
@@ -114,15 +116,18 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 
 3. goreman (etcd 集群) `internal/middleware/etcd/cluster` 中有使用说明
 
-4. gorm（数据库）
+    - 本项目默认依赖了 etcd 集群，需要先关闭本地的 etcd 服务，然后使用 goreman 同时启动三个 etcd 服务进行统一管理
+    - 如果不想依赖 etcd 集群，那么在 config/config.yml 中将 22379 和 32379 删除然后启动本地 etcd 服务即可
 
-5. grpc（rpc 通信协议）
+5. gorm（数据库）
 
-6. logrus（日志管理）
+6. grpc（rpc 通信协议）
 
-7. viper（配置管理）
+7. logrus（日志管理）
 
-8. protobuf（序列化）
+8. viper（配置管理）
+
+9. protobuf（序列化）
 
 ### 运行测试
 
@@ -131,8 +136,6 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 `./script/prepare/exec1.sh`
   
 2. 启动三个 grpc server
-
-系统将 server port 使用命令行参数导入，因此可以自定义任意数量的 grpc server
 
 - terminal1: `go run main.go -port 9999`
 - terminal2: `go run main.go -port 10000`
@@ -145,6 +148,7 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 
 > http 测试与上面类似
 > 在 script/test.md 有完整的测试介绍
+> 上面只是以三个节点为例，系统将 server port 使用命令行参数导入，因此可以自定义任意数量的 grpc server（前提是需要将它的服务地址率先导入 etcd）
 
 ## 功能优化方向（todo）
 
