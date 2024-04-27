@@ -14,7 +14,7 @@
 - 服务注册发现（`etcd endpoint manager`）
 - 提供了自动化测试脚本和相对完整的测试用例（使用查询学生分数进行模拟）
 
-# 项目结构
+## 项目结构
 ```
 .
 ├── README.md
@@ -95,25 +95,36 @@
 49 directories, 66 files
 ```
 
-# 系统运行
+## 系统运行
 
-## 预热阶段
+### 预热阶段
 https://github.com/1055373165/ggcache/assets/33158355/bcd6d2e7-979b-4b1a-b021-b09e654f4bf0
 
 
-## 工作阶段
+### 工作阶段
 https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e48a84f43e19
 
-# 使用
+## 使用
 
-## 依赖
+### 依赖
 
-- etcd 服务（"127.0.0.1:2379"）
-- mysql 服务（"127.0.0.1:3306"）
-- etcd 集群（高可用）
-    - `internal/middleware/etcd/cluster` 中有使用说明
+1. etcd 服务（"127.0.0.1:2379"）
 
-## 运行测试
+2. mysql 服务（"127.0.0.1:3306"）
+
+3. goreman (etcd 集群) `internal/middleware/etcd/cluster` 中有使用说明
+
+4. gorm（数据库）
+
+5. grpc（rpc 通信协议）
+
+6. logrus（日志管理）
+
+7. viper（配置管理）
+
+8. protobuf（序列化）
+
+### 运行测试
 
 1. 将服务实例地址注册到 etcd （外部统一存储中心）
 
@@ -135,30 +146,40 @@ https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e4
 > http 测试与上面类似
 > 在 script/test.md 有完整的测试介绍
 
-# 功能优化方向（todo）
-- 添加缓存命中率指标（动态调整缓存容量）
-- 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要）；
-    - 实现思路一：监听 server 启停信号，使用 `endpoint manager`管理
-    - 实现思路二：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
-- 增加更多的负载均衡策略
-    - 添加 `arc`算法
-    - `LRU2` 算法升级
-- 增加请求限流（令牌桶算法）
-- 实现缓存和数据库的一致性（增加消息队列异步处理）
-- ......
+## 功能优化方向（todo）
 
-# 参考资源链接
-1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 `GeeCache`
-2. [gcache](https://github.com/bluele/gcache) 缓存淘汰策略（基于策略模式）
-3. [groupcache](https://github.com/golang/groupcache) 常作为 `memcached` 替代
-4. [grpc](https://grpc.io/docs/languages/go/quickstart/) `gRPC` 官方文档
-5. [proto3](https://protobuf.dev/programming-guides/proto3/) `protobuf` 官方文档
-6. [protobuf](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862) `protobuf` 编码原理
-7. [protoscope](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5) `protobuf` 个人学习笔记
-8. [etcd](https://etcd.io/docs/v3.5/) 官方文档
-9. [goreman](https://github.com/mattn/goreman) `etcd` 集群搭建
-10. [shell](https://www.shellscript.sh/) shell 脚本
-11. [gorm](https://gorm.io/docs/models.html) 快速搭建后端数据库
-12. [air](https://github.com/cosmtrek/air) 动态加载（方便调试）
-13. [log](https://github.com/charmbracelet/log) 极简、多彩的 `Go` 日志库
+1. 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要）
+
+- 实现思路一：监听 server 启停信号，使用 `endpoint manager`管理
+
+- 实现思路二：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
+    
+2. 添加缓存命中率指标（动态调整缓存容量）
+
+3. 负载均衡策略优化
+
+- 添加 `arc`算法
+
+- `LRU2` 算法升级（高低水位）
+
+4. 增加请求限流（令牌桶算法）
+
+5. 实现缓存和数据库的一致性（增加消息队列异步处理）
+
+...
+
+## 参考资源链接
+1. [Geektutu 分布式缓存 `GeeCache`](https://geektutu.com/post/geecache.html) 
+2. [gcache 缓存淘汰策略](https://github.com/bluele/gcache)
+3. [groupcache 瑞士军刀](https://github.com/golang/groupcache) 
+4. [ `gRPC` 官方文档](https://grpc.io/docs/languages/go/quickstart/)
+5. [`protobuf` 官方文档](https://protobuf.dev/programming-guides/proto3/) 
+6. [`protobuf` 编码原理](https://www.notion.so/blockchainsee/Protocol-Buffer-04cba19af055479299507f04d0a24862) 
+7. [`protobuf` 个人学习笔记](https://www.notion.so/blockchainsee/protoscope-fbfe36c2eef64bfcb630be4f0bd673f5) 
+8. [etcd 官方文档](https://etcd.io/docs/v3.5/) 
+9. [ `etcd` 集群搭建](https://github.com/mattn/goreman)
+10. [shell 脚本](https://www.shellscript.sh/) 
+11. [golang 数据库框架](https://gorm.io/docs/models.html) 
+12. [air 动态加载](https://github.com/cosmtrek/air) 
+13. [极简、多彩的 `Go` 日志库](https://github.com/charmbracelet/log) 
 
