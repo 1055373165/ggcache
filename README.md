@@ -4,51 +4,78 @@
 
 支持 `HTTP`、`RPC` 和服务注册发现的分布式键值缓存系统；
 
-- master 分支是最早的 v1 version
-
 ## 功能介绍
-- 支持 RPC （`gRPC` 框架）
-- 支持多种缓存淘汰策略替换（策略类模式：`LRU`、`LFU`、`FIFO`）
-- 并发访问控制（`singleFlight`机制）
-- 负载均衡策略（一致性哈希算法）
-- 键值分组管理、键值分布式存储（扩展系统吞吐量和可用性）
-- 外部存储高可用（`etcd` 集群模式）
-- 服务注册发现（`etcd endpoint manager`）
-- 提供了自动化测试脚本和相对完整的测试用例（使用查询学生分数进行模拟）
+
+- v1 version，实现了
+  
+    - 并发访问控制（singleFlight）
+
+    - 负载均衡（consistenthash 算法）
+
+    - 多种缓存淘汰策略（lru、lfu、fifo，策略类模式）
+
+    - 分布式缓存节点间基于 http 协议的通信
+
+    - 分布式缓存节点间基于 gRPC 协议的通信
+
+    - 简单的服务注册发现（需要手动导入）
+
+    - 高可用 etcd 集群（使用 goerman 进行配置）
+
+    - 简单测试用例
+
+- v2 version，实现了
+
+    - 改进 singleFlight，增加结果缓存逻辑提升性能
+
+    - 增加 TTL 机制，自动清理过期缓存
+
+    - 实现了简单的业务逻辑，在数据库和缓存之间进行交互测试（两种测试用例）
+
+    - 改进服务注册发现，使用 endpoint manager 对节点进行管理
+
+    - 提供自动化测试脚本和环境搭建介绍
+ 
+- v3 version，实现了
+
+    - 服务注册发现最终版（使用 endpoint manager 和 watch channel实现类似于服务订阅发布的能力）
+
+    - 使用类似于事件回调的处理机制，根据节点的 PUT、DEL 事件更新节点状态
+
+    - 实现秒级节点之间拓扑结构的快速收敛（动态节点管理）
+
+    - 增加 grpc client 测试重试逻辑
+
+    - grpc server 崩溃恢复后，能够接着处理 client 发来的请求
+
+    - 不同节点预热完成后，节点之间的 rpc 调用时延仅为 1ms（但是如果查询的是不存在的数据，延迟最高达到 999ms）
+ 
+    - 即使其中一个节点崩溃或者宕机，也不会影响其他已经预热好的节点（key 和节点之间的关系不受影响，正常提供服务），而且该节点恢复后可以直接提供服务
+ 
+    - 增加缓存穿透的防御策略（将不存在的 key 的空值存到缓存中，设置合理过期时间，防止不存在的 key 的大量并发请求打穿数据库）
 
 ## 项目结构
 ```
 .
 ├── README.md
 ├── api
-│   ├── ggcache
 │   ├── groupcachepb        // grpc server idl.
 │   ├── studentpb           // business idl.
 │   └── website             
-├── assets
-│   ├── image
-│   └── sql
 ├── cmd
 │   ├── grpc
-│   │   ├── grpc1           // grpc server implement1
-│   │   │   └── main.go  
-│   │   ├── grpc2           // grpc server implement2
-│   │   │   └── main.go
-│   │   └── main.go         // grpc server implement
+│   │   └── main.go         // grpc server latest version implement
 │   └── http                // http server implement
-│       └── main.go
 ├── config                  // global config manage
 │   ├── config.go
 │   └── config.yml
 ├── go.mod
 ├── go.sum
 ├── internal                
-│   ├── middleware            // depend on
+│   ├── middleware 
 │   │   └── etcd            
-│   │       ├── cluster       // goreman etcd cluster manage
-│   │       ├── discovery     // service registration discovery (three implement)
-│   │       ├── list_peers.go
-│   │       └── put           // service instance address put
+│   │       ├── cluster       // goerman etcd cluster manage
+│   │       ├── discovery     // service registration discovery (latest version use discovery3 impl.) 
 │   ├── pkg
 │   │   ├── student           // business logic
 │   │   │   ├── dao
@@ -64,7 +91,7 @@
 │       │   ├── interfaces   // cache eviction algorithm interface abstract
 │       │   ├── lfu
 │       │   ├── lru
-│       │   └── purge.go     // export
+│       │   └── purge.go     // export distributed kv object
 │       ├── consistenthash   // consistent hash algorithm for load balance
 │       ├── group.go         
 │       ├── groupcache.go    // group cache imp.
@@ -74,14 +101,11 @@
 │       ├── http_helper.go   // http api server and http server start helper
 │       ├── http_picker.go   // http peer selector
 │       ├── interface.go     // grpc peer selector and grpc proxy abstract
-│       ├── policy           // old version cache eviction algorithm
 │       └── singleflight     // single flight concurrent access control
-├── main.go                  // grpc server default imp.
+├── main.go                  // grpc server default imp. equal to cmd/grpc/main.go
 ├── script                   // grpc and http service test
-│   ├── prepare
 │   ├── test
-│   │   ├── grpc1
-│   │   ├── grpc2
+│   │   ├── grpc
 │   │   └── http
 │   ├── test.md              // test step
 │   ├── test0.sh
@@ -93,14 +117,13 @@
     ├── shutdown            // goroutine gracefully_shutdown
     ├── trace
     └── validate            // ip address validation
-
-49 directories, 66 files
 ```
 
 ## 系统运行
 
 ### 预热阶段
 https://github.com/1055373165/ggcache/assets/33158355/bcd6d2e7-979b-4b1a-b021-b09e654f4bf0
+
 
 
 ### 工作阶段
