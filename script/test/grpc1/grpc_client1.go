@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	pb "ggcache/api/groupcachepb"
-	"ggcache/config"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
+	"github.com/1055373165/ggcache/config"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 const ErrRPCCallNotFound = "rpc error: code = Unknown desc = record not found"

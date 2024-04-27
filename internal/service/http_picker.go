@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"ggcache/internal/service/consistenthash"
+	"github.com/1055373165/ggcache/internal/service/consistenthash"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 var _ Picker = (*HTTPPool)(nil)

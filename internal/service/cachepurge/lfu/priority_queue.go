@@ -1,6 +1,6 @@
 package lfu
 
-import "ggcache/internal/service/cachepurge/interfaces"
+import "github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
 
 type priorityqueue []*lfuEntry
 

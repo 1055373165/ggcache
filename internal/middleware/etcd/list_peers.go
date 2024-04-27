@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"ggcache/config"
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )

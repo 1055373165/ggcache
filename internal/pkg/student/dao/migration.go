@@ -3,8 +3,8 @@ package dao
 import (
 	"os"
 
-	"ggcache/internal/pkg/student/model"
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/internal/pkg/student/model"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 func migration() {

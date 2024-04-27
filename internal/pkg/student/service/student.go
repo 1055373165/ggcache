@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	stuPb "ggcache/api/studentpb"
-	"ggcache/internal/pkg/student/dao"
-	"ggcache/internal/pkg/student/ecode"
+	stuPb "github.com/1055373165/ggcache/api/studentpb"
+	"github.com/1055373165/ggcache/internal/pkg/student/dao"
+	"github.com/1055373165/ggcache/internal/pkg/student/ecode"
 )
 
 type StudentSrv struct {

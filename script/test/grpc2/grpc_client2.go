@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 
-	pb "ggcache/api/groupcachepb"
-	"ggcache/config"
-	"ggcache/utils/logger"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
+	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/resolver"

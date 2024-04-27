@@ -6,7 +6,7 @@ import (
 	"container/list"
 	"time"
 
-	"ggcache/internal/service/cachepurge/interfaces"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
 )
 
 type LRUCache struct {

@@ -10,12 +10,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	pb "ggcache/api/groupcachepb"
-	"ggcache/config"
-	"ggcache/internal/middleware/etcd"
-	"ggcache/internal/middleware/etcd/discovery/discovery1"
-	"ggcache/internal/pkg/student/dao"
-	"ggcache/internal/service"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
+	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/internal/middleware/etcd"
+	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery1"
+	"github.com/1055373165/ggcache/internal/pkg/student/dao"
+	"github.com/1055373165/ggcache/internal/service"
 
 	"google.golang.org/grpc"
 )

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	pb "ggcache/api/groupcachepb"
-	"ggcache/internal/middleware/etcd/discovery/discovery2"
-	"ggcache/utils/logger"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
+	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery2"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )

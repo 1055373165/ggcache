@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ggcache/config"
 	"log"
 
-	"ggcache/internal/middleware/etcd"
-	"ggcache/internal/pkg/student/dao"
-	"ggcache/internal/service"
+	"github.com/1055373165/ggcache/config"
+
+	"github.com/1055373165/ggcache/internal/middleware/etcd"
+	"github.com/1055373165/ggcache/internal/pkg/student/dao"
+	"github.com/1055373165/ggcache/internal/service"
 )
 
 var (

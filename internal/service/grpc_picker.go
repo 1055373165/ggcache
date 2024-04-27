@@ -10,11 +10,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "ggcache/api/groupcachepb"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
 
-	"ggcache/internal/service/consistenthash"
-	"ggcache/utils/logger"
-	"ggcache/utils/validate"
+	"github.com/1055373165/ggcache/internal/service/consistenthash"
+	"github.com/1055373165/ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/validate"
 )
 
 // 测试 Server 是否实现了 Picker 接口

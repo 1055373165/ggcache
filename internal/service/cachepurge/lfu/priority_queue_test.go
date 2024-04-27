@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"ggcache/internal/service/cachepurge/interfaces"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
 )
 
 func Test_priorityqueue_Pop(t *testing.T) {

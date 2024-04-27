@@ -3,9 +3,9 @@ package dao
 import (
 	"context"
 
-	stuPb "ggcache/api/studentpb"
-	"ggcache/internal/pkg/student/model"
-	"ggcache/utils/logger"
+	stuPb "github.com/1055373165/ggcache/api/studentpb"
+	"github.com/1055373165/ggcache/internal/pkg/student/model"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	"gorm.io/gorm"
 )

@@ -3,8 +3,8 @@ package consistenthash
 import (
 	"testing"
 
-	"ggcache/config"
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 func init() {

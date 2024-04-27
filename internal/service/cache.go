@@ -3,9 +3,9 @@ package service
 import (
 	"sync"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 
-	"ggcache/internal/service/policy"
+	"github.com/1055373165/ggcache/internal/service/policy"
 )
 
 // cache 模块负责提供对lru模块的并发控制

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"ggcache/internal/service"
-	httpserver "ggcache/internal/service"
+	"github.com/1055373165/ggcache/internal/service"
+	httpserver "github.com/1055373165/ggcache/internal/service"
 )
 
 var (

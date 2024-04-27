@@ -3,13 +3,13 @@ package cachepurge
 import (
 	"strings"
 
-	"ggcache/internal/service/cachepurge/fifo"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/fifo"
 
-	"ggcache/internal/service/cachepurge/interfaces"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
 
-	"ggcache/internal/service/cachepurge/lfu"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/lfu"
 
-	"ggcache/internal/service/cachepurge/lru"
+	"github.com/1055373165/ggcache/internal/service/cachepurge/lru"
 )
 
 func New(name string, maxBytes int64, onEvicted func(string, interfaces.Value)) interfaces.CacheStrategy {

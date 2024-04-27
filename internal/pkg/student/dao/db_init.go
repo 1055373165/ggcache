@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"strings"
 
-	stuPb "ggcache/api/studentpb"
-	"ggcache/config"
+	stuPb "github.com/1055373165/ggcache/api/studentpb"
+	"github.com/1055373165/ggcache/config"
 
-	logger2 "ggcache/utils/logger"
+	logger2 "github.com/1055373165/ggcache/utils/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

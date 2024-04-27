@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 type Hash func(data []byte) uint32

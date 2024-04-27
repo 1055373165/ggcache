@@ -4,11 +4,11 @@ import (
 	"errors"
 	"time"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	"sync"
 
-	"ggcache/internal/service/singleflight"
+	"github.com/1055373165/ggcache/internal/service/singleflight"
 )
 
 // The Groupcache module provides a higher level of abstraction than cache and implements the ability to fill caches and name partition caches.

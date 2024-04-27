@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"ggcache/config"
-	etcdservice "ggcache/internal/middleware/etcd"
-	dao "ggcache/internal/pkg/student/dao"
-	"ggcache/internal/service"
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/config"
+	etcdservice "github.com/1055373165/ggcache/internal/middleware/etcd"
+	dao "github.com/1055373165/ggcache/internal/pkg/student/dao"
+	"github.com/1055373165/ggcache/internal/service"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 var (

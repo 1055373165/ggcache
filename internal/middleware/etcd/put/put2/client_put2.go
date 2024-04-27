@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"ggcache/utils/logger"
+	"github.com/1055373165/ggcache/utils/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
