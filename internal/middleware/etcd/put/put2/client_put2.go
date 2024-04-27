@@ -29,7 +29,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	_, err = cli.Put(ctx, "GroupCache", "localhost:10000")
+	_, err = cli.Put(ctx, fmt.Sprintf("clusters/%s", "localhost:10000"), "localhost:10000")
 	if err != nil {
 		logger.LogrusObj.Error("put groupcache service to etcd failed")
 		return

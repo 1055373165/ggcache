@@ -71,6 +71,13 @@ func InitConfig() {
 	InitClientV3Config()
 }
 
+func InitClientV3Config() {
+	DefaultEtcdConfig = clientv3.Config{
+		Endpoints:   Conf.Etcd.AddressList,
+		DialTimeout: 5 * time.Second,
+	}
+}
+
 func findRootDir() string {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -87,12 +94,5 @@ func findRootDir() string {
 			panic("reached top of file system without finding go.mod")
 		}
 		currentDir = parentDir
-	}
-}
-
-func InitClientV3Config() {
-	DefaultEtcdConfig = clientv3.Config{
-		Endpoints:   Conf.Etcd.AddressList,
-		DialTimeout: 5 * time.Second,
 	}
 }

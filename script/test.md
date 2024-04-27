@@ -5,7 +5,7 @@
 - 导入的 key 组合形式为："clusters" + "ip:port"
 - 导入的 value 值为：服务实例的地址 "ip:port"
 - 由于还未实现全自动化管理节点，因此还需要一个导入工作，实现了动态节点管理后，就无需这步操作了。
-
+- `./script/test/prepare/exec1.sh`
 ## test
 
 ### grpc1

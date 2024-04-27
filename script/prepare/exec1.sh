@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # 服务注册（模拟分布式场景下的节点服务注册）
-go run ../../internal/middleware/etcd/put/put1/client_put1.go
-go run ../../internal/middleware/etcd/put/put2/client_put2.go
-go run ../../internal/middleware/etcd/put/put3/client_put3.go
+go run ../internal/middleware/etcd/put/put1/client_put1.go
+go run ../internal/middleware/etcd/put/put2/client_put2.go
+go run ../internal/middleware/etcd/put/put3/client_put3.go
 
 # 进入 main.go 所在目录
 

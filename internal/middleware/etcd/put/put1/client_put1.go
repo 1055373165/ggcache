@@ -30,7 +30,7 @@ func main() {
 	defer cancel()
 
 	// cluster is prefix
-	_, err = cli.Put(ctx, "GroupCache", "localhost:9999")
+	_, err = cli.Put(ctx, fmt.Sprintf("clusters/%s", "localhost:9999"), "localhost:9999")
 	if err != nil {
 		logger.LogrusObj.Error("put groupcache service to etcd failed")
 		return
