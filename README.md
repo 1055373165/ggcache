@@ -1,4 +1,4 @@
-# Distributed_KV_Store
+# gRPC Group Cache
 
 ## 项目介绍
 
