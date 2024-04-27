@@ -46,7 +46,7 @@ func Register(service string, addr string, stop chan error) error {
 		return fmt.Errorf("set keepalive for lease failed: %v", err)
 	}
 
-	logger.LogrusObj.Debugf("[%s] register service success\n", addr)
+	logger.LogrusObj.Debugf("[%s] register service success", addr)
 
 	for {
 		select {
