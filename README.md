@@ -109,157 +109,53 @@
 ```
 
 
-## 系统运行
+# 系统运行
 
-### 预热阶段
+## 预热阶段
 https://github.com/1055373165/ggcache/assets/33158355/bcd6d2e7-979b-4b1a-b021-b09e654f4bf0
 
 
-### 工作阶段
+## 工作阶段
 https://github.com/1055373165/ggcache/assets/33158355/5df39b9a-7dca-46f0-bb08-e48a84f43e19
 
+# 使用
 
+## 依赖
 
+- etcd 服务（"127.0.0.1:2379"）
+- mysql 服务（"127.0.0.1:3306"）
+- etcd 集群（高可用）
+    - internal/middleware/etcd/cluster 中有使用说明
 
-## 使用
+## 运行测试
 
-1. 启动 etcd 集群
+1. 将服务实例地址注册到 etcd （外部统一存储中心）
 
-进入 /etcd/cluster 目录，分别运行
+`./script/prepare/exec1.sh`
+  
+2. 启动三个 grpc server
 
-```bash
-cd /etcd/cluster
-```
-```bash 
-go install github.com/mattn/goreman@latest
-```
+系统将 server port 使用命令行参数导入，因此可以自定义任意数量的 grpc server
 
-```bash
-goreman -f Procfile start
-```
+- terminal1: `go run main.go -port 9999`
+- terminal2: `go run main.go -port 10000`
+- terminal3: `go run main.go -port 10001`
 
-![](resources/images_readme/2023-09-19-14-54-34.png)
+3. 执行 rpc call 测试
 
-查看成员状态
+- go run /script/test/grpc1/grpc_client1.go
+- go run /script/test/grpc2/grpc_client2.go
 
-![](images/2023-09-19-15-01-32.png)
+> http 测试与上面类似
 
-2. 将三个服务节点的信息保存到 etcd 集群中
-
-进入 server_register_to_etcd 
-
-```bash
-cd ../server_register_to_etcd
-go run put1/client_put1.go && go run put2/client_put2.go && go run  put3/client_put3.go
-```
-![](resources/images_readme/2023-09-19-14-59-41.png)
-
-查询是否成功
-
-```bash
-etcdctl get clusters --prefix
-```
-![](resources/images_readme/2023-09-19-15-02-51.png)
-
-3. 启动自动化测试脚本
-
-- 启动 3 个服务节点
-- 发起单次 RPC 请求
-- 基于服务注册发现，循环发起 RPC 请求
-
-进入 script 目录，依次执行
-
-```bash
-cd ../../script
-
-```
-
-- 后端数据库、缓存初始数据写入成功 
-
-![](resources/images_readme/2023-09-19-15-06-06.png)
-
-- 集群节点的信息存储成功
-
-![](resources/images_readme/2023-09-19-15-06-28.png)
-
-- 超时节点将被踢出集群（keep-alive 心跳机制，可以自定义 TTL）
-
-![](resources/images_readme/2023-09-19-15-07-06.png)
-
-现在服务启动成功，我们可以运行测试脚本（开一个新的终端）：
-
-```bash
-./test.sh
-```
-
-单次 RPC 请求调用的响应：
-![](resources/images_readme/2023-09-19-15-10-45.png)
-
-基于服务注册发现，循环发起 RPC 请求调用结果：
-![](resources/images_readme/2023-09-19-15-11-32.png)
-
-
-## 执行日志分析
-
-定义：
-
-- 第一个节点（localhost:9999）；
-- 第二个节点（localhost:10000）；
-- 第三个节点（localhost:10001）；
-
-### 缓存未命中
-
-![](resources/images_readme/2023-09-19-15-19-33.png)
-
-第一个 RPC 请求到达后，第二个节点（localhost:10000）接收到，一致性 hash 模块计算 key 的 hash 值，得到 2453906684 ，然后去哈希环上顺时针找大于等于这个 hash 值的首个虚拟节点，找到了哈希环上的第 74 个节点（对应下标 idx=73）；然后再去查虚拟节点和真实节点的映射表，发现这个虚拟节点对应的真实节点正是第二个节点（localhost:10000）；即由该节点负责处理这个 RPC 请求，因为缓存中还没有这个 key 的缓存，所以需要从数据库中查询，然后将查询结果写入缓存，并返回给客户端。（对照日志输出理解）
-
-### 请求转发
-![](resources/images_readme/2023-09-19-15-39-10.png)
-
-RPC 请求由第一个节点（localhost:9999）接收到，一致性 hash 模块计算后将 key 打到了第二个节点上（localhost:10000），第一个节点将请求转发给第二个节点处理（pick remote peer）。
-
-查看第二个节点日志，发现它收到了来自第一个节点的转发请求，
-
-```
-3:09PM INFO <distributekv/server.go:65> Baking 🍪 : [groupcache server localhost:10000] Recv RPC Request - (scores)/(张三)
-计算出 key 的 hash: 2038739146, 顺时针选择的虚拟节点下标 idx: 58, 选择的真实节点：localhost:10000，pick myself, i am localhost:10000；
-3:09PM INFO <distributekv/group.go:13> Baking 🍪 : 进入 GetterFunc，数据库中查询....
-3:09PM INFO <distributekv/group.go:21> Baking 🍪 : 成功从后端数据库中查询到学生 张三 的分数：100
-3:09PM INFO <distributekv/cache.go:55> Baking 🍪 : cache.put(key, val)
-```
-
-日志内容很详细：收到转发的请求、根据一致性 hash 算法计算出真实节点（发现就是自己）、从后端数据库查询 'key=张三' 的值，返回 100、最终客户端收到 RPC 响应；
-
-![](resources/images_readme/2023-09-19-15-44-51.png)
-
-### 缓存命中
-
-我们已经将 'key=张三' 的成绩存入到节点 2 的缓存中了，按照正常处理逻辑，下一次查询时应该走缓存而不是慢速数据库，我们再发起一次请求：
-
-![](resources/images_readme/2023-09-19-15-46-51.png)
-
-根据日志输出可知：一致性 hash 算法将相同的 key 打到了相同的节点上（一致性 hash 算法有效），同样的，节点 1 成功将 RPC 请求转发给了节点 2（分布式节点集群通信正常）；
-
-最后我们还需要验证一下节点 2 的缓存是否生效：
-
-节点 2 的日志：
-```bash
-3:09PM INFO <distributekv/groupcache.go:94> Baking 🍪 : cache hit...
-```
-
-客户端日志：
-```bash
-3:09PM INFO <rpcCallClient/client.go:47> Baking 🍪 : 成功从 RPC 返回调用结果：100
-```
-
-## 功能优化方向（todo）
+# 功能优化方向（todo）
 1. 添加缓存命中率指标（动态调整缓存容量）
 2. 自动检测服务节点信息变化，动态增删节点（节点变化时，动态重构哈希环，对于系统的请求分发十分重要；实现思路一：监听 server 启停信号，使用 endpoint manager 管理；思路 2：使用 etcd 官方 WatchChan() 提供的服务订阅发布机制）
 3. 增加更多的负载均衡策略（下一个准备添加 arc 算法和 LRU2 算法升级）
 4. 增加请求限流（令牌桶算法）
 5. 实现缓存和数据库的一致性（增加消息队列异步处理）
 
-## 参考资源链接
+# 参考资源链接
 1. [ Geektutu]( https://geektutu.com/post/geecache.html) 分布式缓存 GeeCache
 2. [gcache](https://github.com/bluele/gcache) 缓存淘汰策略（基于策略模式）
 3. [groupcache](https://github.com/golang/groupcache) 常作为 memcached 替代
