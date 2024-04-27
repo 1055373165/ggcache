@@ -46,6 +46,9 @@ func main() {
 
 	// 为了模拟实际查询情况，将 names 数组中存在的名字和不存在的名字的分部比例设置为 10 : 1
 	names := []string{"王五", "张三", "李四", "王二", "不存在", "赵六", "李奇"}
+	for i := 0; i < 10; i++ {
+		names = append(names, fmt.Sprintf("不存在%d", i))
+	}
 	for i := 0; i < 100; i++ {
 		names = append(names, fmt.Sprintf("%d", i))
 	}

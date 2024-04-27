@@ -19,9 +19,13 @@ type cache struct {
 }
 
 func newCache(strategy string, cacheSize int64) *cache {
+	onEvicted := func(key string, val interfaces.Value) {
+		logger.LogrusObj.Infof("缓存条目 [%s:%s] 被淘汰", key, val)
+	}
+
 	return &cache{
 		maxCacheSize: cacheSize,
-		strategy:     cachepurge.New(strategy, cacheSize, nil),
+		strategy:     cachepurge.New(strategy, cacheSize, onEvicted),
 	}
 }
 

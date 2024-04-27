@@ -27,6 +27,7 @@ func NewGroupManager(groupnames []string, currentPeerAddr string) map[string]*Gr
 
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
+					// 优化点：即使没有查询到，但是为了防止恶意攻击，这里还是往缓存中 put 一个 key 的空值并设置一个相对合理的过期时间
 					return []byte{}, gorm.ErrRecordNotFound
 				} else {
 					return []byte{}, err

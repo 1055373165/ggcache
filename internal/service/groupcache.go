@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/1055373165/ggcache/utils/logger"
+	"gorm.io/gorm"
 
 	"sync"
 
@@ -115,6 +116,10 @@ func (g *Group) load(key string) (ByteView, error) {
 func (g *Group) getLocally(key string) (ByteView, error) {
 	bytes, err := g.retriever.retrieve(key)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.LogrusObj.Warnf("对于不存在的 key, 为了防止缓存穿透, 先存入缓存中并设置合理过期时间")
+			g.cache.put(key, ByteView{})
+		}
 		return ByteView{}, err
 	}
 

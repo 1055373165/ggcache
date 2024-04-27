@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
+	"github.com/1055373165/ggcache/utils/logger"
 )
 
 type LRUCache struct {
@@ -22,18 +24,34 @@ type LRUCache struct {
 }
 
 func NewLRUCache(maxBytes int64, onEvicted func(string, interfaces.Value)) *LRUCache {
-	return &LRUCache{
+	l := &LRUCache{
 		maxBytes:  maxBytes,
 		root:      list.New(),
 		cache:     make(map[string]*list.Element),
-		OnEvicted: onEvicted}
+		OnEvicted: onEvicted,
+	}
+
+	ttl := time.Duration(config.Conf.Services["groupcache"].TTL) * time.Second
+
+	go func() {
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+
+		for {
+			<-ticker.C
+			l.CleanUp(ttl)
+			logger.LogrusObj.Warnf("触发过期缓存清理后台任务...")
+		}
+	}()
+
+	return l
 }
 
 func (c *LRUCache) RemoveOldest() {
 	ele := c.root.Front()
 	if ele != nil {
 		c.mu.Lock()
-		if ele == nil {
+		if ele == nil { // 还有 CleanUp 并发 goroutine 的过期淘汰策略，因此需要进行并发安全双检，否则对 nil interface 进行断言直接触发 panic
 			c.mu.Unlock()
 			return
 		}
@@ -86,15 +104,19 @@ func (c *LRUCache) Len() int {
 
 func (c *LRUCache) CleanUp(ttl time.Duration) {
 	for e := c.root.Front(); e != nil; e = e.Next() {
+		c.mu.Lock()
+		if e.Value == nil { // 还有缓存自动淘汰策略 RemoveOldest 的存在，需要进行并发安全双检
+			c.mu.Unlock()
+			continue
+		}
 		if e.Value.(*interfaces.Entry).Expired(ttl) {
 			kv := c.root.Remove(e).(*interfaces.Entry)
 			delete(c.cache, kv.Key)
 			c.nbytes -= int64(len(kv.Key)) + int64(kv.Value.Len())
 			if c.OnEvicted != nil {
-				c.OnEvicted(kv.Key, kv.Value)
+				c.OnEvicted(kv.Key, kv.Value) // 定义了缓存被淘汰时的回调函数，比如更新数据库、释放资源、发送更新通知等
 			}
-		} else {
-			break
 		}
 	}
+	c.mu.Unlock()
 }
