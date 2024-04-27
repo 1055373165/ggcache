@@ -27,56 +27,94 @@
 ```
 .
 ├── README.md
-├── conf                            // 日志和 mysql 数据库配置
-│   ├── conf.go
-│   └── init.go
-├── distributekv                    // 分布式键值存储系统
-│   ├── byteview.go                 // 并发读写
-│   ├── cache.go                    // 支持缓存淘汰策略的底层缓存
-│   ├── client.go                   // gRPC 客户端实现
-│   ├── consistenthash              // 一致性 hash 算法（负载均衡）
-│   ├── group.go                    // 测试用的数据库和缓存数据
-│   ├── groupcache.go               // 对底层缓存的封装（资源隔离、并发安全）
-│   ├── peers.go                    // 服务发现
-│   ├── server.go                   // gRPC 服务端实现
-│   └── singleflight                // 并发请求处理优化（协程编排）
-├── etcd
-│   ├── cluster                     // etcd 3 节点集群
-│   ├── discover.go                 // 服务发现
-│   ├── getServerNodesByEtcd.go     // 从 etcd 获取服务节点信息
-│   ├── getServicesAddrs.go         // 获取节点信息
-│   ├── register.go                 // 服务注册（阻塞）
-│   └── server_register_to_etcd     // 将服务节点信息注册到 etcd
+├── api
+│   ├── ggcache
+│   ├── groupcachepb
+│   │   ├── groupcache.pb.go
+│   │   ├── groupcache.proto
+│   │   ├── groupcache_grpc.pb.go
+│   ├── studentpb
+│   │   ├── student.pb.go
+│   │   ├── student.proto
+│   │   └── student_grpc.pb.go
+│   └── website
+│       └── website.proto
+├── assets
+│   ├── image
+│   └── sql
+├── cmd
+│   ├── grpc
+│   │   ├── grpc1
+│   │   │   └── main.go  
+│   │   ├── grpc2
+│   │   │   └── main.go
+│   │   └── main.go
+│   └── http
+│       └── main.go
+├── config
+│   ├── config.go
+│   └── config.yml
 ├── go.mod
 ├── go.sum
-├── grpc
-│   ├── groupcachepb                // gRPC 
-│   ├── rpcCallClient               // 简单 RPC 调用
-│   ├── server                      // gRPC 服务端实现
-│   └── serviceRegisterCall         // RPC 调用（以服务发现的方式）
-├── main.go                                            
-│── db                              // 后端数据库
-│── logger                          // 全局日志
-├── policy                          // 缓存淘汰策略
-│   ├── fifo.go                     // FIFO 淘汰策略
-│   ├── fifo_test.go
-│   ├── kv.go                       // 使用策略模式
-│   ├── lfu.go                      // LFU 淘汰策略（高级局部性）
-│   ├── lfu_single.go
-│   ├── lfu_test.go
-│   ├── lru.go                      // LRU 淘汰策略（基本局部性）
-│   ├── lru_test.go
-│   ├── priority_queue.go           // 基于堆实现的优先队列
-│   └── priority_queue_test.go
-├── resources
-│   └── images
-├── script                          // 自动化测试脚本
-│   ├── build
-│   ├── run.sh
-│   ├── script.md                   // 脚本使用指南
-│   └── test.sh
+├── internal
+│   ├── middleware
+│   │   └── etcd
+│   │       ├── cluster
+│   │       ├── discovery
+│   │       ├── list_peers.go
+│   │       └── put
+│   ├── pkg
+│   │   ├── student
+│   │   │   ├── dao
+│   │   │   ├── ecode
+│   │   │   ├── model
+│   │   │   └── service
+│   │   └── website
+│   └── service
+│       ├── byteview.go
+│       ├── cache.go
+│       ├── cachepurge
+│       │   ├── fifo
+│       │   ├── interfaces
+│       │   ├── lfu
+│       │   ├── lru
+│       │   └── purge.go
+│       ├── consistenthash
+│       │   ├── consistenthash.go
+│       │   └── constenthash_test.go
+│       ├── discover.go
+│       ├── group.go
+│       ├── groupcache.go
+│       ├── grpc_fetcher.go
+│       ├── grpc_picker.go
+│       ├── http_fetcher.go
+│       ├── http_helper.go
+│       ├── http_picker.go
+│       ├── interface.go
+│       ├── policy
+│       ├── register.go
+│       └── singleflight
+│           └── singleflight.go
+├── main.go
+├── script
+│   ├── exec_test.sh
+│   ├── other
+│   ├── prepare
+│   │   └── exec1.sh
+│   └── test
+│       ├── grpc1
+│       │   └── grpc_client1.go
+│       ├── grpc2
+│       │   └── grpc_client2.go
+│       └── http
+│           ├── http_test1.sh
+│           └── http_test2.sh
 └── utils
-    └── utils.go
+    ├── logger
+    ├── shutdown
+    ├── trace
+    └── validate
+49 directories, 64 files
 ```
 
 
