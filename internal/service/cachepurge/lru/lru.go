@@ -48,20 +48,26 @@ func NewLRUCache(maxBytes int64, onEvicted func(string, interfaces.Value)) *LRUC
 }
 
 func (c *LRUCache) RemoveOldest() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	ele := c.root.Front()
-	if ele != nil {
-		c.mu.Lock()
-		if ele == nil { // 还有 CleanUp 并发 goroutine 的过期淘汰策略，因此需要进行并发安全双检，否则对 nil interface 进行断言直接触发 panic
-			c.mu.Unlock()
-			return
-		}
-		kv := c.root.Remove(ele).(*interfaces.Entry)
-		delete(c.cache, kv.Key)
-		c.nbytes -= int64(len(kv.Key)) + int64(kv.Value.Len())
-		if c.OnEvicted != nil {
-			c.OnEvicted(kv.Key, kv.Value)
-		}
-		c.mu.Unlock()
+	if ele == nil {
+		return
+	}
+
+	// 处理一下断言结果，而不是直接 panic
+	kv, ok := c.root.Remove(ele).(*interfaces.Entry)
+	if ok {
+		logger.LogrusObj.Error("error: Item in LRU cache is not of type *interfaces.Entry")
+		return
+	}
+
+	delete(c.cache, kv.Key)
+	c.nbytes -= int64(len(kv.Key)) + int64(kv.Value.Len())
+
+	if c.OnEvicted != nil {
+		c.OnEvicted(kv.Key, kv.Value)
 	}
 }
 
@@ -103,20 +109,20 @@ func (c *LRUCache) Len() int {
 }
 
 func (c *LRUCache) CleanUp(ttl time.Duration) {
-	for e := c.root.Front(); e != nil; e = e.Next() {
-		c.mu.Lock()
-		if e.Value == nil { // 还有缓存自动淘汰策略 RemoveOldest 的存在，需要进行并发安全双检
-			c.mu.Unlock()
-			continue
-		}
-		if e.Value.(*interfaces.Entry).Expired(ttl) {
-			kv := c.root.Remove(e).(*interfaces.Entry)
-			delete(c.cache, kv.Key)
-			c.nbytes -= int64(len(kv.Key)) + int64(kv.Value.Len())
-			if c.OnEvicted != nil {
-				c.OnEvicted(kv.Key, kv.Value) // 定义了缓存被淘汰时的回调函数，比如更新数据库、释放资源、发送更新通知等
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for e := c.root.Front(); e != nil; {
+		next := e.Next()
+		if entry, ok := e.Value.(*interfaces.Entry); ok && entry != nil {
+			if entry.Expired(ttl) {
+				c.root.Remove(e)
+				delete(c.cache, entry.Key)
+				c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
+				if c.OnEvicted != nil {
+					c.OnEvicted(entry.Key, entry.Value)
+				}
 			}
 		}
+		e = next
 	}
-	c.mu.Unlock()
 }

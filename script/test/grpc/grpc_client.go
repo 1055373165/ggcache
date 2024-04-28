@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	ErrRPCCallNotFound = "rpc error: code = Unknown desc = record not found"
-	MaxRetries         = 3
+	ErrRPCCallNotFound  = "rpc error: code = Unknown desc = record not found"
+	MaxRetries          = 3
+	InitialRetryWaitSec = 1
 )
 
 const (
@@ -83,7 +84,8 @@ func main() {
 						break
 					}
 					logger.LogrusObj.Errorf("本次查询学生 %s 分数的 rpc 调用出现故障，重试次数 %d", name, i+1)
-					time.Sleep(time.Second * time.Duration(backoff(i))) // 退避算法
+					waitTime := time.Duration(InitialRetryWaitSec*(1<<uint(i))) * time.Second // 退避算法
+					time.Sleep(waitTime)
 				} else {
 					logger.LogrusObj.Infof("rpc 调用成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 					break
