@@ -60,9 +60,7 @@
  
 
 > Rob Pike："Dont't communicate by sharing memory, share memory by communicating". 不要通过共享内存来通信，应该通过通信来共享内存。
-> 这句话奠定了 Go 应用并发设计的主流风格：使用 channel 进行不同 goroutine 之间的通信。
-> 在动态节点管理实现时，使用 channel 实现了负责哈希环视图重建的 goroutine （g1）和负责监听 endpoint 事件变更 goroutine （g2）之间的通信。一旦系统新增或者移除了
-> 节点，g2 监听到了变更事件，通过 g1 和 g2 共享的信号 channel 告知 g1，g1 收到通知后上锁重建哈希环视图，从而实现并发安全的动态节点管理。
+> 这句话奠定了 Go 应用并发设计的主流风格：使用 channel 进行不同 goroutine 之间的通信。在动态节点管理实现时，使用 channel 实现了负责哈希环视图重建的 goroutine（g1）和负责监听 endpoint 事件变更 goroutine（g2）之间的通信。一旦系统新增或者移除了节点，g2 监听到了变更事件，通过 g1 和 g2 共享的信号 channel 告知 g1，g1 收到通知后上锁重建哈希环视图，从而实现并发安全的动态节点管理。
 
 
 ## 项目结构
@@ -208,8 +206,6 @@ https://github.com/1055373165/ggcache/assets/33158355/1c771e10-c11c-493f-8488-a1
 6. 实现缓存和数据库的一致性（增加消息队列异步处理）（也可以通过缓存淘汰时的回调函数实现） todo（重点）
 
 ...
-
-<img width="401" alt="image" src="https://github.com/1055373165/ggcache/assets/33158355/f42d7b71-e56e-443e-bcfb-9d834f3ab5f4">
 
 
 ## 参考资源链接
