@@ -4,55 +4,55 @@ import (
 	"context"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"fmt"
-	"sync"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
 	"google.golang.org/grpc"
 
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
-	"github.com/1055373165/ggcache/internal/service/consistenthash"
+	discovery "github.com/1055373165/ggcache/internal/discovery"
+
 	"github.com/1055373165/ggcache/utils/logger"
 	"github.com/1055373165/ggcache/utils/validate"
 )
 
-// 测试 Server 是否实现了 Picker 接口
 var _ Picker = (*Server)(nil)
 
-// The Server module provides communication capabilities between groupcache.
-// In this way, groupcache deployed on other machines can obtain the cache by accessing the server.
-// As for which host to find, consistent hashing is responsible.
+// The Server module provides communication capabilities between different groupcache instances.
+// In this way, the groupcache service deployed on other machines can forward the request to the instance that owns the cached data.
+// The consistent hash algorithm is responsible for finding out which host has the value corresponding to the key.
 const (
-	defaultAddr     = "127.0.0.1:9999"
-	defaultReplicas = 50
+	CacheServiceName = "GroupCache"
 )
 
-// Server and Group are decoupled, so the server must implement concurrency control by itself
+// Server and Group are decoupled, so Server must implement concurrency safety by itself.
 type Server struct {
 	pb.UnimplementedGroupCacheServer
 
-	Addr        string     // format: ip:port
-	Status      bool       // true: running false: stop
-	stopsSignal chan error // 通知 registery revoke 服务
-	mu          sync.Mutex
-	consHash    *consistenthash.ConsistentHash
-	clients     map[string]*Client
-	update      chan bool
+	Addr       string        // format: ip:port
+	Status     bool          // true: running false: stop
+	stop       chan error    // Service termination signal channel.
+	viewUpdate chan struct{} // Notification channel when consistent hashing view changes.
+
+	mutex    sync.Mutex // Protect the following fields.
+	consHash *ConsistentHash
+	clients  map[string]*Client
 }
 
-// New Server creates a cache server. If addr is empty, default Addr is used.
-func NewServer(update chan bool, addr string) (*Server, error) {
+// NewServer creates a cache server, if addr is empty, use the default service address.
+func NewServer(viewUpdate chan struct{}, addr string) (*Server, error) {
 	if addr == "" {
-		addr = defaultAddr
+		addr = DefaultAddr
 	}
 
+	// Nodes in a distributed system that can provide the same service are considered equal and are generally called Peer.
 	if !validate.ValidPeerAddr(addr) {
-		return nil, fmt.Errorf("invalid addr %s, expect address format is x.x.x.x:port", addr)
+		return nil, fmt.Errorf("expect address format is x.x.x.x:port, but got %s", addr)
 	}
 
-	return &Server{Addr: addr, update: update}, nil
+	return &Server{Addr: addr, viewUpdate: viewUpdate}, nil
 }
 
 // Server Implement GroupCacheServer in groupcachepb
@@ -81,19 +81,19 @@ func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 
 // SetPeers configures each remote host IP to the Server
 func (s *Server) SetPeers(peersAddrs []string) {
-	s.mu.Lock()
+	s.mutex.Lock()
 
 	if len(peersAddrs) == 0 {
 		peersAddrs = []string{s.Addr}
 	}
 
-	s.consHash = consistenthash.NewConsistentHash(defaultReplicas, nil)
+	s.consHash = NewConsistentHash(DefaultReplicas, nil)
 	s.consHash.AddTruthNode(peersAddrs)
 	s.clients = make(map[string]*Client)
 
 	for _, peersAddr := range peersAddrs {
 		if !validate.ValidPeerAddr(peersAddr) {
-			s.mu.Unlock()
+			s.mutex.Unlock()
 			panic(fmt.Sprintf("[peer %s] invalid address format, it should be x.x.x.x:port", peersAddr))
 		}
 		// GroupCache/localhost:9999
@@ -103,16 +103,16 @@ func (s *Server) SetPeers(peersAddrs []string) {
 		// 服务解析时按照 service 进行前缀查询，找到所有服务节点
 		// 而 clusters 前缀是为了拿到所有实例地址做一致性哈希使用的
 		// 注意 service 要和你在 protocol 文件中定义的服务名称一致
-		s.clients[peersAddr] = NewClient("GroupCache")
+		s.clients[peersAddr] = NewClient(CacheServiceName)
 	}
-	s.mu.Unlock()
+	s.mutex.Unlock()
 
 	go func() {
 		for {
 			select {
-			case <-s.update: // 节点数量发生变化（新增或者删除）整个负载均衡视图需要动态修改
+			case <-s.viewUpdate: // 节点数量发生变化（新增或者删除）整个负载均衡视图需要动态修改
 				s.reconstruct()
-			case <-s.stopsSignal:
+			case <-s.stop:
 				s.Stop()
 			default:
 				time.Sleep(time.Second * 2)
@@ -122,13 +122,13 @@ func (s *Server) SetPeers(peersAddrs []string) {
 }
 
 func (s *Server) reconstruct() {
-	serviceList, err := discovery3.ListServicePeers("GroupCache")
+	serviceList, err := discovery.ListServicePeers(CacheServiceName)
 	if err != nil { // 如果没有拿到服务实例列表，暂时先维持当前视图
 		return
 	}
 
-	s.mu.Lock()
-	s.consHash = consistenthash.NewConsistentHash(defaultReplicas, nil)
+	s.mutex.Lock()
+	s.consHash = NewConsistentHash(DefaultReplicas, nil)
 	s.consHash.AddTruthNode(serviceList)
 	s.clients = make(map[string]*Client)
 
@@ -138,16 +138,16 @@ func (s *Server) reconstruct() {
 		}
 
 		// demo: GroupCache/127.0.0.1:9999
-		s.clients[peerAddr] = NewClient("GroupCache")
+		s.clients[peerAddr] = NewClient(CacheServiceName)
 	}
-	s.mu.Unlock()
+	s.mutex.Unlock()
 	logger.LogrusObj.Infof("hash ring reconstruct, contain service peer %v", serviceList)
 }
 
 // Selects which cache a key request should be sent to based on a consistent hash value
 func (s *Server) Pick(key string) (Fetcher, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	// The real node of the hit
 	peerAddr := s.consHash.GetTruthNode(key)
@@ -172,15 +172,15 @@ func (s *Server) Pick(key string) (Fetcher, bool) {
 5. use etcd service registry which can directly obtain the client connection to the given service through the service name, that is, the grpc channel, and then create a client Stub, which implements the same method as the server and calls it directly
 */
 func (s *Server) Start() {
-	s.mu.Lock()
+	s.mutex.Lock()
 	if s.Status {
-		s.mu.Unlock()
+		s.mutex.Unlock()
 		fmt.Printf("server %s is already started", s.Addr)
 		return
 	}
 
 	s.Status = true
-	s.stopsSignal = make(chan error)
+	s.stop = make(chan error)
 
 	// waiting for client to connect
 	port := strings.Split(s.Addr, ":")[1]
@@ -200,12 +200,12 @@ func (s *Server) Start() {
 	go func() {
 		// register never return unless stop signal received (blocked)
 		// for-select combination implement permanent blocking
-		err := discovery3.Register("GroupCache", s.Addr, s.stopsSignal)
+		err := discovery.Register(CacheServiceName, s.Addr, s.stop)
 		if err != nil {
 			logger.LogrusObj.Error(err.Error())
 		}
 
-		close(s.stopsSignal)
+		close(s.stop)
 
 		err = lis.Close()
 		if err != nil {
@@ -213,7 +213,7 @@ func (s *Server) Start() {
 		}
 		logger.LogrusObj.Warnf("[%s] Revoke service and close tcp socket", s.Addr)
 	}()
-	s.mu.Unlock()
+	s.mutex.Unlock()
 
 	// Serve accepts incoming connections on the listener list, creating a new Server Transport and service Goroutine for each connection.
 	// The service goroutines read gRPC requests and then call the registered handlers to reply to them.
@@ -224,15 +224,15 @@ func (s *Server) Start() {
 }
 
 func (s *Server) Stop() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	if !s.Status {
 		return
 	}
 
 	// notify registry to stop release keepalive
-	s.stopsSignal <- nil
+	s.stop <- nil
 	// change server running status
 	s.Status = false
 	s.clients = nil // help GC

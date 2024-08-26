@@ -8,8 +8,6 @@ import (
 	"gorm.io/gorm"
 
 	"sync"
-
-	"github.com/1055373165/ggcache/internal/service/singleflight"
 )
 
 // The Groupcache module provides a higher level of abstraction than cache and implements the ability to fill caches and name partition caches.
@@ -24,7 +22,7 @@ type Group struct {
 	cache     *cache
 	retriever Retriever
 	server    Picker
-	flight    *singleflight.SingleFlight
+	flight    *SingleFlight
 }
 
 // NewGroup Creates a new cache space.
@@ -41,7 +39,7 @@ func NewGroup(name string, strategy string, maxBytes int64, retriever Retriever)
 		name:      name,
 		cache:     newCache(strategy, maxBytes),
 		retriever: retriever,
-		flight:    singleflight.NewSingleFlight(10 * time.Second),
+		flight:    NewSingleFlight(10 * time.Second),
 	}
 
 	mu.Lock()

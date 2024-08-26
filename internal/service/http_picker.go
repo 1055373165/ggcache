@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/1055373165/ggcache/internal/service/consistenthash"
-
 	"github.com/1055373165/ggcache/utils/logger"
 )
 
@@ -25,9 +23,9 @@ const (
 type HTTPPool struct {
 	address      string
 	basePath     string
-	mu           sync.Mutex                     // guards peers and httpFetchers
-	peers        *consistenthash.ConsistentHash // used to select nodes based on specific keys
-	httpFetchers map[string]*httpFetcher        // keyed by e.g. "http://10.0.0.1:8080"
+	mu           sync.Mutex              // guards peers and httpFetchers
+	peers        *ConsistentHash         // used to select nodes based on specific keys
+	httpFetchers map[string]*httpFetcher // keyed by e.g. "http://10.0.0.1:8080"
 }
 
 func NewHTTPPool(address string) *HTTPPool {
@@ -98,7 +96,7 @@ func (p *HTTPPool) UpdatePeers(peers ...string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.peers = consistenthash.NewConsistentHash(defaultReplicas, nil)
+	p.peers = NewConsistentHash(DefaultReplicas, nil)
 	p.peers.AddTruthNode(peers)
 	p.httpFetchers = make(map[string]*httpFetcher, len(peers))
 

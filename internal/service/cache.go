@@ -3,10 +3,9 @@ package service
 import (
 	"sync"
 
+	"github.com/1055373165/ggcache/internal/service/eviction"
+	"github.com/1055373165/ggcache/internal/service/eviction/strategy"
 	"github.com/1055373165/ggcache/utils/logger"
-
-	"github.com/1055373165/ggcache/internal/service/cachepurge"
-	"github.com/1055373165/ggcache/internal/service/cachepurge/interfaces"
 )
 
 // cache 模块负责提供对lru模块的并发控制
@@ -14,18 +13,18 @@ import (
 // 给 lru 上层并发上一层锁
 type cache struct {
 	mu           sync.RWMutex
-	strategy     interfaces.CacheStrategy
+	strategy     strategy.EvictionStrategy
 	maxCacheSize int64 // 保证 lru 一定初始化
 }
 
-func newCache(strategy string, cacheSize int64) *cache {
-	onEvicted := func(key string, val interfaces.Value) {
+func newCache(s string, cacheSize int64) *cache {
+	onEvicted := func(key string, val strategy.Value) {
 		logger.LogrusObj.Infof("缓存条目 [%s:%s] 被淘汰", key, val)
 	}
 
 	return &cache{
 		maxCacheSize: cacheSize,
-		strategy:     cachepurge.New(strategy, cacheSize, onEvicted),
+		strategy:     eviction.New(s, cacheSize, onEvicted),
 	}
 }
 

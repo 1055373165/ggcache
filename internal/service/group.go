@@ -8,7 +8,7 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/studentpb"
-	"github.com/1055373165/ggcache/internal/pkg/student/dao"
+	"github.com/1055373165/ggcache/pkg/student/dao"
 	"github.com/1055373165/ggcache/utils/logger"
 
 	"gorm.io/gorm"

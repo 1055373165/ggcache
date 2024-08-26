@@ -7,7 +7,8 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
+	discovery "github.com/1055373165/ggcache/internal/discovery"
+
 	"github.com/1055373165/ggcache/utils/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -31,7 +32,7 @@ func (c *Client) Fetch(group string, key string) ([]byte, error) {
 
 	// Discover services and obtain connection to services
 	start := time.Now()
-	conn, err := discovery3.Discovery(cli, c.serviceName)
+	conn, err := discovery.Discovery(cli, c.serviceName)
 	logger.LogrusObj.Warnf("本次 grpc dial 的耗时为: %v ms", time.Since(start).Milliseconds())
 	if err != nil {
 		return nil, err

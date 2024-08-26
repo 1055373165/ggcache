@@ -11,7 +11,7 @@ etcd:
         - localhost:2379
         - localhost:22379
         - localhost:32379
-    ttl: 5                   # second
+    ttl: 5                  
 
 services:
     gateway:
@@ -30,7 +30,7 @@ services:
             - localhost:9999
             - localhost:10000
             - localhost:10001
-        ttl: 30               # second
+        ttl: 30              
 
 domain:
     student:
