@@ -1,7 +1,7 @@
 mysql:
     host: localhost
     port: 3306
-    database: kv
+    database: cachetest
     username: root
     password: 1234
     charset: utf8mb4
@@ -24,7 +24,7 @@ services:
         loadBalance: false
         addr: 
             - localhost:10006
-    groupcache:
+    ggcache:
         name: GroupCache
         addr:
             - localhost:9999
