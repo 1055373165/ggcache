@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/1055373165/ggcache/config"
-	conf "github.com/1055373165/ggcache/config"
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
-	"github.com/1055373165/ggcache/internal/pkg/student/dao"
-	"github.com/1055373165/ggcache/internal/service"
+	discovery "github.com/1055373165/ggcache/discovery"
+	grpcservice "github.com/1055373165/ggcache/internal"
+	"github.com/1055373165/ggcache/test/servicefortest/student/dao"
 	"github.com/1055373165/ggcache/utils/logger"
 )
 
@@ -17,26 +16,26 @@ var (
 )
 
 func main() {
-	conf.InitConfig()
+	config.InitConfig()
 	dao.InitDB()
 	flag.Parse()
 
 	// grpc node local service address
 	serviceAddr := fmt.Sprintf("localhost:%d", *port)
-	gm := service.NewGroupManager([]string{"scores", "website"}, serviceAddr)
+	gm := grpcservice.NewGroupManager([]string{"scores", "website"}, serviceAddr)
 
-	// get a grpc service instance（通过通信来共享内存而不是通过共享内存来通信）
-	updateChan := make(chan bool)
-	svr, err := service.NewServer(updateChan, serviceAddr)
+	// get a grpc service instance
+	updateChan := make(chan struct{})
+	svr, err := grpcservice.NewServer(updateChan, serviceAddr)
 	if err != nil {
 		logger.LogrusObj.Errorf("acquire grpc server instance failed, %v", err)
 		return
 	}
 
-	go discovery3.DynamicServices(updateChan, config.Conf.Services["groupcache"].Name)
+	go discovery.DynamicServices(updateChan, config.Conf.Services["ggcache"].Name)
 
 	// Server implemented Pick interface, register a node selector for ggcache
-	peers, err := discovery3.ListServicePeers(config.Conf.Services["groupcache"].Name)
+	peers, err := discovery.ListServicePeers(config.Conf.Services["ggcache"].Name)
 	if err != nil {
 		peers = []string{"serviceAddr"}
 	}

@@ -8,6 +8,8 @@
 
 支持动态节点管理和网络拓扑快速收敛的分布式键值缓存系统；
 
+项目启动和测试：test/project_run.md
+
 ## 功能介绍
 
 - v1 version，实现了
@@ -69,7 +71,7 @@
 .
 ├── README.md
 ├── api
-│   ├── groupcachepb        // grpc server idl.
+│   ├── ggcachepb        // grpc server idl.
 │   ├── studentpb           // business idl.
 │   └── website             
 ├── cmd

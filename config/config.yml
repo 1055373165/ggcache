@@ -1,7 +1,7 @@
 mysql:
     host: localhost
     port: 3306
-    database: kv
+    database: cachetest
     username: root
     password: 1234
     charset: utf8mb4
@@ -11,7 +11,7 @@ etcd:
         - localhost:2379
         - localhost:22379
         - localhost:32379
-    ttl: 5                   # second
+    ttl: 5                  
 
 services:
     gateway:
@@ -24,13 +24,13 @@ services:
         loadBalance: false
         addr: 
             - localhost:10006
-    groupcache:
+    ggcache:
         name: GroupCache
         addr:
             - localhost:9999
             - localhost:10000
             - localhost:10001
-        ttl: 30               # second
+        ttl: 30              
 
 domain:
     student:

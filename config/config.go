@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -12,6 +13,7 @@ import (
 
 var Conf *Config
 var DefaultEtcdConfig clientv3.Config
+var once sync.Once
 
 type Config struct {
 	Mysql    *MySQL              `yaml:"mysql"`
@@ -49,13 +51,12 @@ func InitConfig() {
 	rootDir := findRootDir()
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
-	viper.AddConfigPath(path.Join(rootDir, "config"))
+	viper.AddConfigPath(path.Join(rootDir, "config")) // Make sure the configuration file is found.
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	// parse into Conf object
 	err = viper.Unmarshal(&Conf)
 	if err != nil {
 		panic(err)
@@ -65,10 +66,12 @@ func InitConfig() {
 }
 
 func InitClientV3Config() {
-	DefaultEtcdConfig = clientv3.Config{
-		Endpoints:   Conf.Etcd.Address,
-		DialTimeout: 5 * time.Second,
-	}
+	once.Do(func() {
+		DefaultEtcdConfig = clientv3.Config{
+			Endpoints:   Conf.Etcd.Address,
+			DialTimeout: 5 * time.Second,
+		}
+	})
 }
 
 func findRootDir() string {
@@ -77,7 +80,7 @@ func findRootDir() string {
 		panic(err)
 	}
 
-	// Traverse upward until you find the go.mod file
+	// Traverse upward until you find the go.mod file.
 	for {
 		if _, err := os.Stat(filepath.Join(currentDir, "go.mod")); err == nil {
 			return currentDir
