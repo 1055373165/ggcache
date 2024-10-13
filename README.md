@@ -69,61 +69,62 @@
 ## 项目结构
 ```
 .
-├── README.md
 ├── api
-│   ├── ggcachepb        // grpc server idl.
-│   ├── studentpb           // business idl.
-│   └── website             
-├── cmd
-│   ├── grpc
-│   │   └── main.go         // grpc server latest version implement
-│   └── http                // http server implement
-├── config                  // global config manage
+│   ├── generate.md              // ggcache and student service code generate guide
+│   ├── ggcache.proto
+│   ├── ggcachepb
+│   ├── student.proto
+│   └── studentpb
+├── config
 │   ├── config.go
-│   └── config.yml
+│   └── config.yml               // mysql, etcd, etc. configuration
+├── discovery                    // service register and discovery
+│   ├── discovery.go
+│   └── registry.go
+├── etcd                         // etcd cluster used as service registry
+│   └── cluster
+│       ├── Procfile
+│       └── runcluster.md        // run etcd cluster guide
 ├── go.mod
 ├── go.sum
-├── internal                
-│   ├── middleware 
-│   │   └── etcd            
-│   │       ├── cluster       // goerman etcd cluster manage
-│   │       ├── discovery     // service registration discovery (latest version use discovery3 impl.) 
-│   ├── pkg
-│   │   ├── student           // business logic
-│   │   │   ├── dao
-│   │   │   ├── ecode
-│   │   │   ├── model
-│   │   │   └── service
-│   │   └── website          
-│   └── service              // grpc group cache service imp.
-│       ├── byteview.go      // read-only 
-│       ├── cache.go         // concurrency-safe caching imp.
-│       ├── cachepurge       // cache eviction algorithm implemented in strategy mode
-│       │   ├── fifo         
-│       │   ├── interfaces   // cache eviction algorithm interface abstract
-│       │   ├── lfu
-│       │   ├── lru
-│       │   └── purge.go     // export distributed kv object
-│       ├── consistenthash   // consistent hash algorithm for load balance
-│       ├── group.go         
-│       ├── groupcache.go    // group cache imp.
-│       ├── grpc_fetcher.go  // grpc proxy 
-│       ├── grpc_picker.go   // grpc peer selector
-│       ├── http_fetcher.go  // http proxy
-│       ├── http_helper.go   // http api server and http server start helper
-│       ├── http_picker.go   // http peer selector
-│       ├── interface.go     // grpc peer selector and grpc proxy abstract
-│       └── singleflight     // single flight concurrent access control
-├── main.go                  // grpc server default imp. equal to cmd/grpc/main.go
-├── script                   // grpc and http service test
-│   ├── test
-│   │   ├── grpc
-│   │   └── http
-│   ├── test.md              // test step
-│   ├── test0.sh
-│   ├── test1.sh
-│   ├── test2.sh
-│   └── test3.sh
+├── internal             
+│   ├── byteview.go              // for data security
+│   ├── cache.go                 // main cache logic
+│   ├── consistenthash.go        // for load-balance
+│   ├── constenthash_test.go
+│   ├── eviction                 // cache eviction implement
+│   │   ├── evictstrategy.go
+│   │   ├── fifo.go
+│   │   ├── fifo_test.go
+│   │   ├── lfu.go
+│   │   ├── lfu_test.go
+│   │   ├── lru.go
+│   │   ├── lru_test.go
+│   │   ├── priority_queue.go
+│   │   ├── priority_queue_test.go
+│   │   └── strategy.go
+│   ├── group.go                
+│   ├── groupcache.go          
+│   ├── grpc_fetcher.go          
+│   ├── grpc_picker.go
+│   ├── interface.go
+│   └── singleflight.go          // single flight for concurrent access control
+├── main.go
+├── test
+│   ├── client                   // grpc client
+│   │   ├── client.sh
+│   │   └── grpc_client.go
+│   ├── project_run.md           // project run overall guide
+│   ├── servicefortest           // student service just for test
+│   │   └── student
+│   │       ├── dao
+│   │       ├── ecode
+│   │       ├── model
+│   │       └── service
+│   └── sql                      // student database init
+│       ├── create_sql.md
+│       ├── create_sql.sh
+│       └── student.sql
 └── utils
     ├── logger
     ├── shutdown            // goroutine gracefully_shutdown
