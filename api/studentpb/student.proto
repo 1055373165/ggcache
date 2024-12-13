@@ -1,0 +1,53 @@
+syntax="proto3";
+
+package studentpb;
+
+option go_package = ".";
+
+// window: protoc -I api/pb api/student.proto --go_out=plugins=grpc:.
+// mac: protoc --go_out=./student --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./student.proto
+// mac: protoc-go-inject-tag -input=./api/pb/student/student.pb.go
+
+message StudentModel {
+    int64 StudentID = 1;
+    string Name = 2;
+    float Score = 3;
+    string Grade = 4;
+    string Email = 5;
+    string PhoneNumber = 6;
+}
+
+message StudentRequest {
+    int64  StudentID = 1;
+    string Name = 2;
+    float  Score = 3;
+    string Grade = 4;
+    string Email = 5;
+    string PhoneNumber = 6;
+}
+
+message StudentResponse {
+    int64 StudentId = 1;
+    string Name = 2;
+    float Score = 3;
+}
+
+message StudentDetailResponse {
+    StudentResponse StudentDetail = 1;
+    int64 Code = 2;
+}
+
+message StudentCommonResonse {
+    int64  Code = 1;
+    string Message = 2;
+    int64  StudentID = 3;
+    string Name = 4;
+    string Score = 5;
+}
+
+service StudentService {
+    rpc StudentCreate(StudentRequest) returns(StudentCommonResonse);
+    rpc StudentDelete(StudentRequest) returns(StudentCommonResonse);
+    rpc StudentUpdate(StudentRequest) returns(StudentCommonResonse);
+    rpc StudentShow(StudentRequest) returns(StudentDetailResponse);
+}
