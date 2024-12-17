@@ -14,10 +14,11 @@ var Conf *Config
 var DefaultEtcdConfig clientv3.Config
 
 type Config struct {
-	Mysql    *MySQL              `yaml:"mysql"`
-	Etcd     *Etcd               `yaml:"etcd"`
-	Services map[string]*Service `yaml:"services"`
-	Domain   map[string]*Domain  `yaml:"domain"`
+	Mysql        *MySQL              `yaml:"mysql"`
+	Etcd         *Etcd               `yaml:"etcd"`
+	Services     map[string]*Service `yaml:"services"`
+	Domain       map[string]*Domain  `yaml:"domain"`
+	GroupManager *GroupManager       `yaml:"groupManager"`
 }
 
 type MySQL struct {
@@ -43,6 +44,11 @@ type Service struct {
 
 type Domain struct {
 	Name string `yaml:"name"`
+}
+
+type GroupManager struct {
+	Strategy     string `yaml:"strategy"`
+	MaxCacheSize int64  `yaml:"maxCacheSize"`
 }
 
 func InitConfig() {

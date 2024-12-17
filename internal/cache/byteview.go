@@ -1,9 +1,12 @@
 // Package cache implements a distributed cache system with various features.
 package cache
 
+import "time"
+
 // ByteView holds an immutable view of bytes.
 type ByteView struct {
-	b []byte // Actual bytes stored
+	b        []byte    // Actual bytes stored
+	expireAt time.Time // 过期时间，零值表示永不过期
 }
 
 // Len returns the view's length.
@@ -25,6 +28,12 @@ func (v ByteView) String() string {
 // Note: The returned slice should not be modified.
 func (v ByteView) Bytes() []byte {
 	return v.b
+}
+
+// IsExpired 检查值是否已过期
+func (v ByteView) IsExpired() bool {
+	// 零值时间表示永不过期
+	return !v.expireAt.IsZero() && time.Now().After(v.expireAt)
 }
 
 // cloneBytes returns a copy of the input byte slice.

@@ -1,9 +1,9 @@
 mysql:
     host: localhost
     port: 3306
-    database: kv
+    database: cachetest
     username: root
-    password: 1234
+    password: root
     charset: utf8mb4
 
 etcd:
@@ -30,7 +30,11 @@ services:
             - localhost:9999
             - localhost:10000
             - localhost:10001
-        ttl: 30               # second
+        ttl:  300            # second
+
+groupManager:
+    strategy: "arc"
+    maxCacheSize: 1024000
 
 domain:
     student:

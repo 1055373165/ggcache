@@ -7,8 +7,8 @@ import (
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/internal/cache"
-	"github.com/1055373165/ggcache/internal/etcd/discovery"
 	"github.com/1055373165/ggcache/pkg/common/logger"
+	"github.com/1055373165/ggcache/pkg/etcd/discovery"
 )
 
 var (
@@ -20,11 +20,9 @@ func main() {
 	dao.InitDB()
 	flag.Parse()
 
-	// grpc node local service address
 	serviceAddr := fmt.Sprintf("localhost:%d", *port)
 	gm := cache.NewGroupManager([]string{"scores", "website"}, serviceAddr)
 
-	// get a grpc service instance（通过通信来共享内存而不是通过共享内存来通信）
 	updateChan := make(chan struct{})
 	svr, err := cache.NewServer(updateChan, serviceAddr)
 	if err != nil {
@@ -34,16 +32,17 @@ func main() {
 
 	go discovery.DynamicServices(updateChan, config.Conf.Services["groupcache"].Name)
 
-	// Server implemented Pick interface, register a node selector for ggcache
 	peers, err := discovery.ListServicePeers(config.Conf.Services["groupcache"].Name)
 	if err != nil {
-		peers = []string{"serviceAddr"}
+		logger.LogrusObj.Fatalf("failed to discover peers: %v", err)
+		return
 	}
 
 	svr.SetPeers(peers)
 
 	gm["scores"].RegisterServer(svr)
 
-	// start grpc service
-	svr.Start()
+	if err := svr.Start(); err != nil {
+		logger.LogrusObj.Fatalf("server failed to start: %v", err)
+	}
 }

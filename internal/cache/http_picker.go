@@ -9,7 +9,6 @@ import (
 	"github.com/1055373165/ggcache/pkg/common/logger"
 )
 
-// Verify HTTPPool implements Picker interface at compile time
 var _ Picker = (*HTTPPool)(nil)
 
 const (
@@ -20,28 +19,21 @@ const (
 // HTTPPool implements an HTTP-based peer picker for distributed caching.
 // It uses a consistent hash ring to distribute cache keys across peers.
 type HTTPPool struct {
-	address      string                  // Server's base URL (e.g., "http://example.net:8000")
-	basePath     string                  // URL prefix for cache endpoints
-	mu           sync.Mutex              // Guards peers and httpFetchers
-	peers        *ConsistentMap          // Consistent hash map for peer selection
-	httpFetchers map[string]*httpFetcher // Maps peer URLs to their HTTP clients
+	currentServer string
+	basePath      string
+	peerSelector  *ConsistentMap
+	fetcherMap    map[string]*httpFetcher
+	mu            sync.Mutex
 }
 
 // NewHTTPPool creates a new HTTP-based peer pool with the given server address.
-func NewHTTPPool(address string) *HTTPPool {
+func NewHTTPPool(srvAddr string) *HTTPPool {
 	return &HTTPPool{
-		address:  address,
-		basePath: defaultBasePath,
+		currentServer: srvAddr,
+		basePath:      defaultBasePath,
 	}
 }
 
-// Log formats and outputs a log message with the server's address.
-func (p *HTTPPool) Log(format string, v ...interface{}) {
-	logger.LogrusObj.Infof("[Server %s] %s", p.address, fmt.Sprintf(format, v...))
-}
-
-// ServeHTTP handles HTTP requests for cache operations.
-// The URL format is: /<basepath>/<groupname>/<key>
 func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasPrefix(r.URL.Path, p.basePath) {
 		http.Error(w, "invalid cache endpoint", http.StatusBadRequest)
@@ -73,20 +65,25 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(view.Bytes())
 }
 
+func (p *HTTPPool) Log(format string, v ...interface{}) {
+	logger.LogrusObj.Infof("[Server %s] %s", p.currentServer, fmt.Sprintf(format, v...))
+}
+
 // Pick implements the Picker interface.
 // It selects a peer based on the given key and returns the corresponding HTTP client.
 func (p *HTTPPool) Pick(key string) (Fetcher, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	peerAddress := p.peers.GetNode(key)
-	if peerAddress == p.address {
+	peerAddress := p.peerSelector.GetNode(key)
+	if peerAddress == p.currentServer {
 		// upper layer get the value of the key locally after receiving false
 		return nil, false
 	}
 
-	logger.LogrusObj.Infof("[dispatcher peer %s] pick remote peer: %s", apiServerAddr, peerAddress)
-	return p.httpFetchers[peerAddress], true
+	logger.LogrusObj.Infof("[request forward by peer %s], pick remote peer: %s", p.currentServer, peerAddress)
+
+	return p.fetcherMap[peerAddress], true
 }
 
 // UpdatePeers updates the peer list and rebuilds the consistent hash ring.
@@ -94,12 +91,12 @@ func (p *HTTPPool) UpdatePeers(peers ...string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.peers = NewConsistentHash(defaultReplicas, nil)
-	p.peers.AddNodes(peers...)
-	p.httpFetchers = make(map[string]*httpFetcher, len(peers))
+	p.peerSelector = NewConsistentHash(defaultReplicas, nil)
+	p.peerSelector.AddNodes(peers...)
+	p.fetcherMap = make(map[string]*httpFetcher, len(peers))
 
 	for _, peer := range peers {
-		p.httpFetchers[peer] = &httpFetcher{
+		p.fetcherMap[peer] = &httpFetcher{
 			baseURL: peer + p.basePath, // such "http://10.0.0.1:9999/_ggcache/"
 		}
 	}

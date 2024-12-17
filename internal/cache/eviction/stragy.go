@@ -4,7 +4,6 @@
 package eviction
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +19,8 @@ const (
 	EvictionLFU
 	// EvictionFIFO represents First In First Out strategy
 	EvictionFIFO
+	// EvictionARC represents Adaptive Replacement Cache strategy
+	EvictionARC
 )
 
 // String returns the string representation of EvictionType
@@ -31,6 +32,8 @@ func (e EvictionType) String() string {
 		return "lfu"
 	case EvictionFIFO:
 		return "fifo"
+	case EvictionARC:
+		return "arc"
 	default:
 		return "unknown"
 	}
@@ -45,6 +48,8 @@ func StringToEvictionType(s string) (EvictionType, error) {
 		return EvictionLFU, nil
 	case "fifo":
 		return EvictionFIFO, nil
+	case "arc":
+		return EvictionARC, nil
 	default:
 		return EvictionLRU, fmt.Errorf("invalid eviction type: %s", s)
 	}
@@ -52,84 +57,7 @@ func StringToEvictionType(s string) (EvictionType, error) {
 
 // IsValid checks if the EvictionType is valid
 func (e EvictionType) IsValid() bool {
-	return e >= EvictionLRU && e <= EvictionFIFO
-}
-
-// EvictedType represents the type of eviction strategy
-type EvictedType string
-
-const (
-	EvictedTypeLRU  EvictedType = "lru"
-	EvictedTypeLFU  EvictedType = "lfu"
-	EvictedTypeFIFO EvictedType = "fifo"
-)
-
-// String returns the string representation
-func (e EvictedType) String() string {
-	return string(e)
-}
-
-// MarshalJSON implements json.Marshaler interface
-func (e EvictedType) MarshalJSON() ([]byte, error) {
-	if !e.IsValid() {
-		return nil, fmt.Errorf("invalid eviction type: %s", e)
-	}
-	return json.Marshal(e.String())
-}
-
-// UnmarshalJSON implements json.Unmarshaler interface
-func (e *EvictedType) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-
-	et, err := StringToEvictedType(s)
-	if err != nil {
-		return err
-	}
-	*e = et
-	return nil
-}
-
-// MarshalText implements encoding.TextMarshaler interface
-func (e EvictedType) MarshalText() ([]byte, error) {
-	if !e.IsValid() {
-		return nil, fmt.Errorf("invalid eviction type: %s", e)
-	}
-	return []byte(e.String()), nil
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler interface
-func (e *EvictedType) UnmarshalText(text []byte) error {
-	et, err := StringToEvictedType(string(text))
-	if err != nil {
-		return err
-	}
-	*e = et
-	return nil
-}
-
-func StringToEvictedType(s string) (EvictedType, error) {
-	switch strings.ToLower(s) {
-	case string(EvictedTypeLRU):
-		return EvictedTypeLRU, nil
-	case string(EvictedTypeLFU):
-		return EvictedTypeLFU, nil
-	case string(EvictedTypeFIFO):
-		return EvictedTypeFIFO, nil
-	default:
-		return "", fmt.Errorf("invalid eviction type: %s", s)
-	}
-}
-
-func (e EvictedType) IsValid() bool {
-	switch e {
-	case EvictedTypeLRU, EvictedTypeLFU, EvictedTypeFIFO:
-		return true
-	default:
-		return false
-	}
+	return e >= EvictionLRU && e <= EvictionARC
 }
 
 // Value represents a value that can be stored in the cache.
@@ -182,25 +110,8 @@ func (e *Entry) Touch() {
 // CacheConfig represents the configuration for a cache
 type CacheConfig struct {
 	MaxBytes        int64         `json:"max_bytes"`
-	EvictionType    EvictedType   `json:"eviction_type"`
+	EvictionType    EvictionType  `json:"eviction_type"`
 	CleanupInterval time.Duration `json:"cleanup_interval"`
-}
-
-// Example usage of serialization
-func ExampleSerialization() {
-	config := CacheConfig{
-		MaxBytes:        1024,
-		EvictionType:    EvictedTypeLRU,
-		CleanupInterval: time.Minute,
-	}
-
-	// Marshal to JSON
-	jsonData, _ := json.Marshal(config)
-	// {"max_bytes":1024,"eviction_type":"lru","cleanup_interval":60000000000}
-
-	// Unmarshal from JSON
-	var newConfig CacheConfig
-	_ = json.Unmarshal(jsonData, &newConfig)
 }
 
 // New creates a new cache with the specified eviction strategy.
@@ -217,6 +128,8 @@ func New(name string, maxBytes int64, onEvicted func(string, Value)) (CacheStrat
 		return NewCacheUseLFU(maxBytes, onEvicted), nil
 	case EvictionFIFO:
 		return NewCacheUseFIFO(maxBytes, onEvicted), nil
+	case EvictionARC:
+		return NewCacheUseARC(maxBytes, onEvicted), nil
 	default:
 		return nil, fmt.Errorf("unsupported cache strategy: %q", name)
 	}

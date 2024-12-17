@@ -9,33 +9,31 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
-	"google.golang.org/grpc"
-
-	"github.com/1055373165/ggcache/internal/etcd/discovery"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"github.com/1055373165/ggcache/pkg/common/validate"
+	"github.com/1055373165/ggcache/pkg/etcd/discovery"
+	"google.golang.org/grpc"
 )
 
-// Verify Server implements Picker interface at compile time
 var _ Picker = (*Server)(nil)
 
-const (
+var (
 	defaultAddr     = "127.0.0.1:9999"
 	defaultReplicas = 50
+	serviceName     = "GroupCache"
 )
 
 // Server provides gRPC-based peer-to-peer communication for distributed caching.
-// It allows cache instances on different machines to fetch cached values from each other.
 type Server struct {
 	pb.UnimplementedGroupCacheServer
 
-	Addr        string     // Network address in host:port format
-	Status      bool       // Running status: true if running, false if stopped
-	stopsSignal chan error // Channel to signal registry to stop keepalive lease
-	mu          sync.Mutex
-	consHash    *ConsistentMap
+	addr        string
+	isRunning   bool
+	stopSignal  chan error
+	updateChan  chan struct{}
+	mu          sync.RWMutex
+	consistHash *ConsistentMap
 	clients     map[string]*Client
-	update      chan struct{}
 }
 
 // NewServer creates a new cache server.
@@ -49,14 +47,15 @@ func NewServer(update chan struct{}, addr string) (*Server, error) {
 		return nil, fmt.Errorf("invalid peer address %s", addr)
 	}
 
-	return &Server{Addr: addr, update: update}, nil
+	return &Server{addr: addr, updateChan: update}, nil
 }
 
 // Get handles gRPC requests to fetch values from the cache.
 func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	group, key := req.GetGroup(), req.GetKey()
 	resp := &pb.GetResponse{}
-	logger.LogrusObj.Infof("[Server %s] Received RPC request - group: %s, key: %s", s.Addr, group, key)
+
+	logger.LogrusObj.Infof("[Server %s] Received RPC request - group: %s, key: %s", s.addr, group, key)
 
 	if key == "" || group == "" {
 		return resp, fmt.Errorf("key and group name are required")
@@ -79,13 +78,13 @@ func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 // SetPeers configures each remote host IP to the Server
 func (s *Server) SetPeers(peersAddrs []string) {
 	s.mu.Lock()
-
+	defer s.mu.Unlock()
 	if len(peersAddrs) == 0 {
-		peersAddrs = []string{s.Addr}
+		peersAddrs = []string{s.addr}
 	}
 
-	s.consHash = NewConsistentHash(defaultReplicas, nil)
-	s.consHash.AddNodes(peersAddrs...)
+	s.consistHash = NewConsistentHash(defaultReplicas, nil)
+	s.consistHash.AddNodes(peersAddrs...)
 	s.clients = make(map[string]*Client)
 
 	for _, peersAddr := range peersAddrs {
@@ -93,26 +92,18 @@ func (s *Server) SetPeers(peersAddrs []string) {
 			s.mu.Unlock()
 			panic(fmt.Sprintf("[peer %s] invalid address format, it should be x.x.x.x:port", peersAddr))
 		}
-		// GroupCache/localhost:9999
-		// GroupCache/localhost:10000
-		// GroupCache/localhost:10001
-		// attention：服务发现原理建议看下 Endpoint 源码, key 是 service/addr value 是 addr
-		// 服务解析时按照 service 进行前缀查询，找到所有服务节点
-		// 而 clusters 前缀是为了拿到所有实例地址做一致性哈希使用的
-		// 注意 service 要和你在 protocol 文件中定义的服务名称一致
 		s.clients[peersAddr] = NewClient("GroupCache")
 	}
-	s.mu.Unlock()
 
 	go func() {
 		for {
 			select {
-			case <-s.update: // 节点数量发生变化（新增或者删除）整个负载均衡视图需要动态修改
+			case <-s.updateChan:
 				s.reconstruct()
-			case <-s.stopsSignal:
+			case <-s.stopSignal:
 				s.Stop()
 			default:
-				time.Sleep(time.Second * 2)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
@@ -120,118 +111,182 @@ func (s *Server) SetPeers(peersAddrs []string) {
 
 func (s *Server) reconstruct() {
 	serviceList, err := discovery.ListServicePeers("GroupCache")
-	if err != nil { // 如果没有拿到服务实例列表，暂时先维持当前视图
+	if err != nil {
 		return
 	}
 
-	s.mu.Lock()
-	s.consHash = NewConsistentHash(defaultReplicas, nil)
-	s.consHash.AddNodes(serviceList...)
-	s.clients = make(map[string]*Client)
+	// 创建新的 map 和 hash 环
+	newClients := make(map[string]*Client)
+	newHash := NewConsistentHash(defaultReplicas, nil)
+	newHash.AddNodes(serviceList...)
 
+	// 复用现有的有效连接
+	s.mu.RLock()
 	for _, peerAddr := range serviceList {
 		if !validate.ValidPeerAddr(peerAddr) {
+			s.mu.RUnlock()
 			panic(fmt.Sprintf("[peer %s] invalid address format, expect x.x.x.x:port", peerAddr))
 		}
 
-		// demo: GroupCache/127.0.0.1:9999
-		s.clients[peerAddr] = NewClient("GroupCache")
+		// 尝试复用现有连接
+		if client, exists := s.clients[peerAddr]; exists {
+			newClients[peerAddr] = client
+		} else {
+			newClients[peerAddr] = NewClient("GroupCache")
+		}
 	}
+	s.mu.RUnlock()
+
+	// 原子替换
+	s.mu.Lock()
+	oldClients := s.clients
+	s.clients = newClients
+	s.consistHash = newHash
 	s.mu.Unlock()
+
+	for addr, client := range oldClients {
+		if _, exists := newClients[addr]; !exists {
+			client.Close()
+		}
+	}
+
 	logger.LogrusObj.Infof("hash ring reconstruct, contain service peer %v", serviceList)
 }
 
-// Selects which cache a key request should be sent to based on a consistent hash value
+// Pick selects which cache node should handle the given key.
+// It returns (nil, false) only when the hash ring is not yet initialized (peerAddr is empty).
+// When the key is mapped to the current node, it still returns (nil, false) but this is an
+// expected case indicating the key should be handled locally.
 func (s *Server) Pick(key string) (Fetcher, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	// The real node of the hit
-	peerAddr := s.consHash.GetNode(key)
-
-	// Pick itself
-	// peerAddr 在系统刚启动时一致性视图还未构建完成
-	if peerAddr == s.Addr || peerAddr == "" {
-		logger.LogrusObj.Infof("oohhh! pick myself, i am %s", s.Addr)
+	peerAddr := s.consistHash.GetNode(key)
+	if peerAddr == "" {
+		logger.LogrusObj.Warnf("hash ring not initialized yet, handling key %s locally", key)
 		return nil, false
 	}
 
-	logger.LogrusObj.Infof("[current peer %s] pick remote peer: %s", s.Addr, peerAddr)
+	if peerAddr == s.addr {
+		logger.LogrusObj.Debugf("key %s is mapped to current node %s (local handling)", key, s.addr)
+		return nil, false
+	}
+
+	logger.LogrusObj.Debugf("key %s is mapped to remote peer %s", key, peerAddr)
 	return s.clients[peerAddr], true
 }
 
-/*
-------------start service----------------
-1. set server running status
-2. initialize stop channel to notify registry stop keepalive lease
-3. initialize tcp socket and start listening
-4. register the customize rpc service to grpc, so that grpc can distribute the request to the server for processing
-5. use etcd service registry which can directly obtain the client connection to the given service through the service name, that is, the grpc channel, and then create a client Stub, which implements the same method as the server and calls it directly
-*/
-func (s *Server) Start() {
-	s.mu.Lock()
-	if s.Status {
-		s.mu.Unlock()
-		fmt.Printf("server %s is already started", s.Addr)
-		return
+// Start initializes and starts the gRPC server.
+// It handles service registration, gRPC server setup, and connection management.
+// Returns an error if the server fails to start or is already running.
+func (s *Server) Start() error {
+	if err := s.initServer(); err != nil {
+		return fmt.Errorf("failed to initialize server: %w", err)
 	}
 
-	s.Status = true
-	s.stopsSignal = make(chan error)
-
-	// waiting for client to connect
-	port := strings.Split(s.Addr, ":")[1]
-	lis, err := net.Listen("tcp", ":"+port)
+	lis, err := s.setupListener()
 	if err != nil {
-		fmt.Printf("failed to listen %s, error: %v", s.Addr, err)
-		return
+		return fmt.Errorf("failed to setup listener: %w", err)
 	}
 
-	// getting a customized implementation of a grpc Server instance
-	grpcServer := grpc.NewServer()
-	// registers the service and its implementation to a concrete type that implements GroupCacheServer interface.
-	pb.RegisterGroupCacheServer(grpcServer, s)
-	defer s.Stop()
+	grpcServer := s.setupGRPCServer()
 
-	// service registry
-	go func() {
-		// register never return unless stop signal received (blocked)
-		// for-select combination implement permanent blocking
-		err := discovery.Register("GroupCache", s.Addr, s.stopsSignal)
-		if err != nil {
-			logger.LogrusObj.Error(err.Error())
-		}
+	// Start service registration in background
+	errChan := make(chan error, 1)
+	go s.registerService(lis, errChan)
 
-		close(s.stopsSignal)
-
-		err = lis.Close()
-		if err != nil {
-			logger.LogrusObj.Error(err.Error())
-		}
-		logger.LogrusObj.Warnf("[%s] Revoke service and close tcp socket", s.Addr)
-	}()
-	s.mu.Unlock()
-
-	// Serve accepts incoming connections on the listener list, creating a new Server Transport and service Goroutine for each connection.
-	// The service goroutines read gRPC requests and then call the registered handlers to reply to them.
-	if err := grpcServer.Serve(lis); s.Status && err != nil {
-		logger.LogrusObj.Fatalf("failed to serve %s, error: %v", s.Addr, err)
-		return
+	// Start serving requests
+	if err := s.serveRequests(grpcServer, lis); err != nil {
+		return fmt.Errorf("failed to serve: %w", err)
 	}
+
+	return nil
 }
 
-func (s *Server) Stop() {
+func (s *Server) initServer() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.Status {
+	if s.isRunning {
+		return fmt.Errorf("server %s is already running", s.addr)
+	}
+
+	s.isRunning = true
+	s.stopSignal = make(chan error)
+	return nil
+}
+
+func (s *Server) setupListener() (net.Listener, error) {
+	port := strings.Split(s.addr, ":")[1]
+	lis, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen on port %s: %w", port, err)
+	}
+	return lis, nil
+}
+
+func (s *Server) setupGRPCServer() *grpc.Server {
+	grpcServer := grpc.NewServer()
+	pb.RegisterGroupCacheServer(grpcServer, s)
+	return grpcServer
+}
+
+func (s *Server) registerService(lis net.Listener, errChan chan error) {
+	defer func() {
+		if err := lis.Close(); err != nil {
+			logger.LogrusObj.Errorf("failed to close listener: %v", err)
+		}
+	}()
+
+	err := discovery.Register(serviceName, s.addr, s.stopSignal)
+	if err != nil {
+		logger.LogrusObj.Errorf("failed to register service: %v", err)
+		errChan <- err
 		return
 	}
 
-	// notify registry to stop release keepalive
-	s.stopsSignal <- nil
-	// change server running status
-	s.Status = false
-	s.clients = nil // help GC
-	s.consHash = nil
+	// Wait for stop signal
+	<-s.stopSignal
+	logger.LogrusObj.Infof("service %s unregistered", s.addr)
+}
+
+func (s *Server) serveRequests(grpcServer *grpc.Server, lis net.Listener) error {
+	// Serve blocks until the server stops or encounters an error
+	if err := grpcServer.Serve(lis); err != nil && s.isRunning {
+		return fmt.Errorf("failed to serve on %s: %w", s.addr, err)
+	}
+	return nil
+}
+
+// Stop gracefully shuts down the server and cleans up resources.
+// It's safe to call Stop multiple times.
+func (s *Server) Stop() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.isRunning {
+		return nil
+	}
+
+	// Signal service registration goroutine to stop
+	close(s.stopSignal)
+
+	// Update server state
+	s.isRunning = false
+
+	// Clean up resources
+	s.cleanup()
+
+	logger.LogrusObj.Infof("server %s stopped successfully", s.addr)
+
+	return nil
+}
+
+func (s *Server) cleanup() {
+	// Clear maps and help GC
+	for k := range s.clients {
+		delete(s.clients, k)
+	}
+	s.clients = nil
+	s.consistHash = nil
 }

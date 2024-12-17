@@ -8,34 +8,45 @@ import (
 	"sync"
 )
 
-// Hash maps bytes to uint32
+// Hash defines a function that generates a hash value for the given data.
 type Hash func(data []byte) uint32
 
-// Map constains all hashed keys
+// ConsistentMap implements consistent hashing to distribute keys across nodes.
+// It maintains a ring of virtual nodes to ensure even distribution.
 type ConsistentMap struct {
 	mu       sync.RWMutex
-	hash     Hash           // Hash function to use
-	replicas int            // Number of virtual nodes per real node
-	keys     []int          // Sorted hash keys
-	hashMap  map[int]string // Map from hash key to real node name
+	hash     Hash           // hash function to use
+	replicas int            // number of virtual nodes per real node
+	keys     []int          // sorted list of hash keys
+	hashMap  map[int]string // maps virtual nodes to real nodes
 }
 
-// New creates a Map instance with given replicas count and hash function.
-// If hash is nil, crc32.ChecksumIEEE is used.
+// NewConsistentHash creates a ConsistentMap with the specified number of replicas
+// and an optional hash function. If fn is nil, uses crc32.ChecksumIEEE.
 func NewConsistentHash(replicas int, fn Hash) *ConsistentMap {
+	if replicas <= 0 {
+		replicas = 1
+	}
+
 	m := &ConsistentMap{
 		replicas: replicas,
 		hash:     fn,
 		hashMap:  make(map[int]string),
 	}
+
 	if m.hash == nil {
 		m.hash = crc32.ChecksumIEEE
 	}
 	return m
 }
 
-// Add adds nodes to the hash ring.
+// AddNodes adds the specified nodes to the hash ring.
+// Each node is replicated multiple times for better distribution.
 func (m *ConsistentMap) AddNodes(nodes ...string) {
+	if len(nodes) == 0 {
+		return
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -49,10 +60,10 @@ func (m *ConsistentMap) AddNodes(nodes ...string) {
 	sort.Ints(m.keys)
 }
 
-// GetNode returns the closest node in the hash ring to the provided key.
-// Returns empty string if the hash ring is empty or key is empty.
+// GetNode returns the node responsible for the given key.
+// Returns empty string if the hash ring is empty or key is invalid.
 func (m *ConsistentMap) GetNode(key string) string {
-	if key == "" {
+	if key == "" || m == nil {
 		return ""
 	}
 
@@ -64,13 +75,11 @@ func (m *ConsistentMap) GetNode(key string) string {
 	}
 
 	hash := int(m.hash([]byte(key)))
-
-	// Binary search for appropriate replica
 	idx := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash
 	})
 
-	// Wrap around to first replica if necessary
+	// If we reached the end, wrap around to the first node
 	if idx == len(m.keys) {
 		idx = 0
 	}
@@ -78,18 +87,18 @@ func (m *ConsistentMap) GetNode(key string) string {
 	return m.hashMap[m.keys[idx]]
 }
 
-// RemoveNode removes a node and all its replicas from the hash ring.
-// It's safe to call this method even if the node doesn't exist.
+// RemoveNode removes a node and its replicas from the hash ring.
+// This operation is safe even if the node doesn't exist.
 func (m *ConsistentMap) RemoveNode(node string) {
-	if node == "" {
+	if node == "" || m == nil {
 		return
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Calculate all possible hashes for the node's replicas
-	var hashesToRemove []int
+	// Find all hashes for this node's replicas
+	hashesToRemove := make([]int, 0, m.replicas)
 	for i := 0; i < m.replicas; i++ {
 		hash := int(m.hash([]byte(strconv.Itoa(i) + node)))
 		if _, exists := m.hashMap[hash]; exists {
@@ -98,21 +107,27 @@ func (m *ConsistentMap) RemoveNode(node string) {
 		}
 	}
 
-	// Remove the hashes from the sorted keys slice
-	if len(hashesToRemove) > 0 {
-		newKeys := make([]int, 0, len(m.keys)-len(hashesToRemove))
-		for _, k := range m.keys {
-			shouldKeep := true
-			for _, h := range hashesToRemove {
-				if k == h {
-					shouldKeep = false
-					break
-				}
-			}
-			if shouldKeep {
-				newKeys = append(newKeys, k)
-			}
-		}
-		m.keys = newKeys
+	// If no hashes were found, nothing to remove
+	if len(hashesToRemove) == 0 {
+		return
 	}
+
+	// Create a new slice without the removed hashes
+	newKeys := make([]int, 0, len(m.keys)-len(hashesToRemove))
+	for _, k := range m.keys {
+		if !containsInt(hashesToRemove, k) {
+			newKeys = append(newKeys, k)
+		}
+	}
+	m.keys = newKeys
+}
+
+// containsInt returns true if x is present in the sorted slice nums.
+func containsInt(nums []int, x int) bool {
+	for _, n := range nums {
+		if n == x {
+			return true
+		}
+	}
+	return false
 }

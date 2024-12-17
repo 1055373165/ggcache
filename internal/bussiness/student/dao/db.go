@@ -78,7 +78,7 @@ func InitDB() error {
 	migration()
 
 	// Initialize database for testing
-	InitilizeDB()
+	InitilizeTestData()
 
 	return nil
 }

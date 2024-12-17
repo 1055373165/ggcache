@@ -32,42 +32,67 @@ func IsHasTable(tableName string) bool {
 	return _db.Migrator().HasTable(tableName)
 }
 
+func InitilizeTestData() {
+	d := NewStudentDao(context.Background())
+
+	// For test.
+	names := []string{"王五", "张三", "李四", "王二", "赵六", "李奇"}
+
+	for _, name := range names {
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  name,
+			Score: float32(rand.Int31n(10000)),
+		})
+	}
+
+	for i := 0; i < 1000; i++ {
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  fmt.Sprintf("%d", i),
+			Score: float32(rand.Int31n(100)),
+		})
+	}
+
+	for _, name := range *GetGenerateEnglishNames() {
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  name,
+			Score: float32(rand.Int31n(10000)),
+		})
+	}
+
+	for _, name := range *GetGenerateChineseNames() {
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  name,
+			Score: float32(rand.Int31n(10000)),
+		})
+	}
+}
+
 // Construct some test data
 func InitilizeDB() {
-	ctx := context.Background()
-	d := NewStudentDao(ctx)
+	d := NewStudentDao(context.Background())
+
+	if _, err := d.ShowStudentInfo(&stuPb.StudentRequest{Name: "李四"}); err == nil {
+		logger.LogrusObj.Warnln("数据库已经存在测试数据，无需再次导入...")
+		return
+	}
 
 	names := []string{"王五", "张三", "李四", "王二", "赵六", "李奇"}
 
-	rand.NewSource(time.Now().UnixNano())
-
 	for _, name := range names {
-		err := d.CreateStudent(&stuPb.StudentRequest{
-			Name:        name,
-			Score:       float32(rand.Int31n(100)),
-			Email:       fmt.Sprintf("%s@example.com", name),
-			Grade:       fmt.Sprintf("Grade-%d", rand.Intn(12)+1),
-			PhoneNumber: fmt.Sprintf("1%d", rand.Int63n(1000000000)),
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  name,
+			Score: float32(rand.Int31n(10000)),
 		})
-		if err != nil {
-			logger.LogrusObj.Errorf("failed to create student %s: %v", name, err)
-		}
 	}
 
-	// Create additional random students.
-	for i := 0; i < 10; i++ {
-		name := fmt.Sprintf("Student-%d", i)
-		err := d.CreateStudent(&stuPb.StudentRequest{
-			Name:        name,
-			Score:       float32(rand.Int31n(100)),
-			Email:       fmt.Sprintf("%s@example.com", name),
-			Grade:       fmt.Sprintf("Grade-%d", rand.Intn(12)+1),
-			PhoneNumber: fmt.Sprintf("1%d", rand.Int63n(1000000000)),
+	for i := 0; i < 1000; i++ {
+		d.CreateStudent(&stuPb.StudentRequest{
+			Name:  fmt.Sprintf("%d", i),
+			Score: float32(rand.Int31n(100)),
 		})
-		if err != nil {
-			logger.LogrusObj.Errorf("failed to create student %s: %v", name, err)
-		}
 	}
+
+	logger.LogrusObj.Infoln("测试数据导入成功...")
 }
 
 func GenerateChineseNames(n int) []string {
