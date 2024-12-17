@@ -49,8 +49,13 @@ func (m *ConsistentMap) AddNodes(nodes ...string) {
 	sort.Ints(m.keys)
 }
 
-// Get returns the closest node in the hash ring to the provided key.
+// GetNode returns the closest node in the hash ring to the provided key.
+// Returns empty string if the hash ring is empty or key is empty.
 func (m *ConsistentMap) GetNode(key string) string {
+	if key == "" {
+		return ""
+	}
+
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -73,15 +78,41 @@ func (m *ConsistentMap) GetNode(key string) string {
 	return m.hashMap[m.keys[idx]]
 }
 
-// Remove removes a node from the hash ring.
+// RemoveNode removes a node and all its replicas from the hash ring.
+// It's safe to call this method even if the node doesn't exist.
 func (m *ConsistentMap) RemoveNode(node string) {
+	if node == "" {
+		return
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// Calculate all possible hashes for the node's replicas
+	var hashesToRemove []int
 	for i := 0; i < m.replicas; i++ {
 		hash := int(m.hash([]byte(strconv.Itoa(i) + node)))
-		idx := sort.SearchInts(m.keys, hash)
-		m.keys = append(m.keys[:idx], m.keys[idx+1:]...)
-		delete(m.hashMap, hash)
+		if _, exists := m.hashMap[hash]; exists {
+			hashesToRemove = append(hashesToRemove, hash)
+			delete(m.hashMap, hash)
+		}
+	}
+
+	// Remove the hashes from the sorted keys slice
+	if len(hashesToRemove) > 0 {
+		newKeys := make([]int, 0, len(m.keys)-len(hashesToRemove))
+		for _, k := range m.keys {
+			shouldKeep := true
+			for _, h := range hashesToRemove {
+				if k == h {
+					shouldKeep = false
+					break
+				}
+			}
+			if shouldKeep {
+				newKeys = append(newKeys, k)
+			}
+		}
+		m.keys = newKeys
 	}
 }

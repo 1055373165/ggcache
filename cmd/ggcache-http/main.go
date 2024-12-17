@@ -4,8 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/1055373165/ggcache/internal/service"
-	httpserver "github.com/1055373165/ggcache/internal/service"
+	"github.com/1055373165/ggcache/internal/cache"
 )
 
 var (
@@ -30,13 +29,13 @@ func main() {
 		serverAddrs = append(serverAddrs, v)
 	}
 
-	gm := service.NewGroupManager([]string{"scores", "website"}, fmt.Sprintf("127.0.0.1:%d", *port))
+	gm := cache.NewGroupManager([]string{"scores", "website"}, fmt.Sprintf("127.0.0.1:%d", *port))
 	//  start http api server for client load balancing
 	if *api {
-		go httpserver.StartHTTPAPIServer(apiServerAddr1, gm["scores"])
-		go httpserver.StartHTTPAPIServer(apiServerAddr2, gm["website"])
+		go cache.StartHTTPAPIServer(apiServerAddr1, gm["scores"])
+		go cache.StartHTTPAPIServer(apiServerAddr2, gm["website"])
 	}
 	// start http server to provide caching service
-	httpserver.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["scores"])
-	httpserver.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["website"])
+	cache.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["scores"])
+	cache.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["website"])
 }

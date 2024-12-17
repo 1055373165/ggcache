@@ -8,54 +8,55 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
-	"github.com/1055373165/ggcache/internal/service/consistenthash"
-	"github.com/1055373165/ggcache/pkg/pb"
-	"github.com/1055373165/ggcache/utils/logger"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
 	"google.golang.org/grpc"
+
+	"github.com/1055373165/ggcache/internal/etcd/discovery"
+	"github.com/1055373165/ggcache/pkg/common/logger"
+	"github.com/1055373165/ggcache/pkg/common/validate"
 )
 
-// Server implements the GroupCache gRPC service.
+// Verify Server implements Picker interface at compile time
+var _ Picker = (*Server)(nil)
+
+const (
+	defaultAddr     = "127.0.0.1:9999"
+	defaultReplicas = 50
+)
+
+// Server provides gRPC-based peer-to-peer communication for distributed caching.
+// It allows cache instances on different machines to fetch cached values from each other.
 type Server struct {
 	pb.UnimplementedGroupCacheServer
-	Addr        string                  // Server's address (host:port)
-	Status      bool                   // true: running false: stop
-	stopsSignal chan error             // Notify registry to stop keepalive lease
-	mu          sync.Mutex             // Guards peers and clients
-	peers       *consistenthash.Map    // Consistent hash map for peer selection
-	clients     map[string]*Client     // Cache of gRPC clients, keyed by peer address
-	update      chan bool              // Update signal for peers
+
+	Addr        string     // Network address in host:port format
+	Status      bool       // Running status: true if running, false if stopped
+	stopsSignal chan error // Channel to signal registry to stop keepalive lease
+	mu          sync.Mutex
+	consHash    *ConsistentMap
+	clients     map[string]*Client
+	update      chan struct{}
 }
 
-// NewServer creates a new GroupCache gRPC server.
-func NewServer(update chan bool, addr string) (*Server, error) {
+// NewServer creates a new cache server.
+// If addr is empty, defaultAddr is used.
+func NewServer(update chan struct{}, addr string) (*Server, error) {
 	if addr == "" {
-		addr = "127.0.0.1:9999"
+		addr = defaultAddr
 	}
 
 	if !validate.ValidPeerAddr(addr) {
-		return nil, fmt.Errorf("invalid addr %s, expect address format is x.x.x.x:port", addr)
+		return nil, fmt.Errorf("invalid peer address %s", addr)
 	}
 
-	return &Server{
-		Addr:   addr,
-		update: update,
-	}, nil
+	return &Server{Addr: addr, update: update}, nil
 }
 
 // Get handles gRPC requests to fetch values from the cache.
-//
-// Parameters:
-//   - ctx: The request context
-//   - req: The GetRequest containing group name and key
-//
-// Returns:
-//   - *pb.GetResponse: The response containing the fetched value
-//   - error: Any error encountered during the fetch
 func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	group, key := req.GetGroup(), req.GetKey()
 	resp := &pb.GetResponse{}
-	logger.LogrusObj.Infof("[GroupCache server %s] Recv RPC Request - (%s)/(%s)", s.Addr, group, key)
+	logger.LogrusObj.Infof("[Server %s] Received RPC request - group: %s, key: %s", s.Addr, group, key)
 
 	if key == "" || group == "" {
 		return resp, fmt.Errorf("key and group name are required")
@@ -63,15 +64,15 @@ func (s *Server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 
 	g := GetGroup(group)
 	if g == nil {
-		return resp, fmt.Errorf("group %s not found", group)
+		return resp, fmt.Errorf("no such group: %s", group)
 	}
 
-	view, err := g.Get(key)
+	value, err := g.Get(key)
 	if err != nil {
 		return resp, err
 	}
 
-	resp.Value = view.Bytes()
+	resp.Value = value.Bytes()
 	return resp, nil
 }
 
@@ -83,15 +84,22 @@ func (s *Server) SetPeers(peersAddrs []string) {
 		peersAddrs = []string{s.Addr}
 	}
 
-	s.peers = consistenthash.NewConsistentHash(defaultReplicas, nil)
-	s.peers.AddTruthNode(peersAddrs)
+	s.consHash = NewConsistentHash(defaultReplicas, nil)
+	s.consHash.AddNodes(peersAddrs...)
 	s.clients = make(map[string]*Client)
 
 	for _, peersAddr := range peersAddrs {
 		if !validate.ValidPeerAddr(peersAddr) {
 			s.mu.Unlock()
-			panic(fmt.Sprintf("[peer %s] invalid address format, expect x.x.x.x:port", peersAddr))
+			panic(fmt.Sprintf("[peer %s] invalid address format, it should be x.x.x.x:port", peersAddr))
 		}
+		// GroupCache/localhost:9999
+		// GroupCache/localhost:10000
+		// GroupCache/localhost:10001
+		// attention：服务发现原理建议看下 Endpoint 源码, key 是 service/addr value 是 addr
+		// 服务解析时按照 service 进行前缀查询，找到所有服务节点
+		// 而 clusters 前缀是为了拿到所有实例地址做一致性哈希使用的
+		// 注意 service 要和你在 protocol 文件中定义的服务名称一致
 		s.clients[peersAddr] = NewClient("GroupCache")
 	}
 	s.mu.Unlock()
@@ -111,14 +119,14 @@ func (s *Server) SetPeers(peersAddrs []string) {
 }
 
 func (s *Server) reconstruct() {
-	serviceList, err := discovery3.ListServicePeers("GroupCache")
+	serviceList, err := discovery.ListServicePeers("GroupCache")
 	if err != nil { // 如果没有拿到服务实例列表，暂时先维持当前视图
 		return
 	}
 
 	s.mu.Lock()
-	s.peers = consistenthash.NewConsistentHash(defaultReplicas, nil)
-	s.peers.AddTruthNode(serviceList)
+	s.consHash = NewConsistentHash(defaultReplicas, nil)
+	s.consHash.AddNodes(serviceList...)
 	s.clients = make(map[string]*Client)
 
 	for _, peerAddr := range serviceList {
@@ -126,19 +134,20 @@ func (s *Server) reconstruct() {
 			panic(fmt.Sprintf("[peer %s] invalid address format, expect x.x.x.x:port", peerAddr))
 		}
 
+		// demo: GroupCache/127.0.0.1:9999
 		s.clients[peerAddr] = NewClient("GroupCache")
 	}
 	s.mu.Unlock()
 	logger.LogrusObj.Infof("hash ring reconstruct, contain service peer %v", serviceList)
 }
 
-// PickPeer selects a peer to handle a given key.
-// It returns (nil, false) if no peer was picked or if the key should be handled locally.
-func (s *Server) PickPeer(key string) (Fetcher, bool) {
+// Selects which cache a key request should be sent to based on a consistent hash value
+func (s *Server) Pick(key string) (Fetcher, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	peerAddr := s.peers.GetTruthNode(key)
+	// The real node of the hit
+	peerAddr := s.consHash.GetNode(key)
 
 	// Pick itself
 	// peerAddr 在系统刚启动时一致性视图还未构建完成
@@ -151,8 +160,14 @@ func (s *Server) PickPeer(key string) (Fetcher, bool) {
 	return s.clients[peerAddr], true
 }
 
-// Start initializes and starts the gRPC server.
-// It listens on the server's address and registers the GroupCache service.
+/*
+------------start service----------------
+1. set server running status
+2. initialize stop channel to notify registry stop keepalive lease
+3. initialize tcp socket and start listening
+4. register the customize rpc service to grpc, so that grpc can distribute the request to the server for processing
+5. use etcd service registry which can directly obtain the client connection to the given service through the service name, that is, the grpc channel, and then create a client Stub, which implements the same method as the server and calls it directly
+*/
 func (s *Server) Start() {
 	s.mu.Lock()
 	if s.Status {
@@ -182,7 +197,7 @@ func (s *Server) Start() {
 	go func() {
 		// register never return unless stop signal received (blocked)
 		// for-select combination implement permanent blocking
-		err := discovery3.Register("GroupCache", s.Addr, s.stopsSignal)
+		err := discovery.Register("GroupCache", s.Addr, s.stopsSignal)
 		if err != nil {
 			logger.LogrusObj.Error(err.Error())
 		}
@@ -218,5 +233,5 @@ func (s *Server) Stop() {
 	// change server running status
 	s.Status = false
 	s.clients = nil // help GC
-	s.peers = nil
+	s.consHash = nil
 }

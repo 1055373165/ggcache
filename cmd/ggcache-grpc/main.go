@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/1055373165/ggcache/config"
-	grpcservice "github.com/1055373165/ggcache/internal"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
+	grpcservice "github.com/1055373165/ggcache/internal/cache"
 	"github.com/1055373165/ggcache/internal/etcd/discovery"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 )

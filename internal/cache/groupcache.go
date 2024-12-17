@@ -2,110 +2,138 @@ package cache
 
 import (
 	"errors"
-	"sync"
+	"time"
 
 	"github.com/1055373165/ggcache/pkg/common/logger"
+	"gorm.io/gorm"
+
+	"sync"
 )
 
+// The Groupcache module provides a higher level of abstraction than cache and implements the ability to fill caches and name partition caches.
 var (
-	mu     sync.RWMutex
-	groups = make(map[string]*Group)
+	mu           sync.RWMutex
+	GroupManager = make(map[string]*Group)
 )
 
-// Group represents a cache namespace and associated data loading spread over.
+// Group provides the ability to name and manage caches and fill caches
 type Group struct {
 	name      string
-	getter    Getter
-	mainCache *Cache
-	peers     Picker
+	cache     *cache
+	retriever Retriever
+	server    Picker
+	flight    *SingleFlight
 }
 
-// NewGroup creates a new instance of Group.
-func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
-	if getter == nil {
-		logger.LogrusObj.Panic("nil Getter")
+// NewGroup Creates a new cache space.
+func NewGroup(name string, strategy string, maxBytes int64, retriever Retriever) *Group {
+	if retriever == nil {
+		panic("Group Retriver must be existed!")
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	if _, ok := GroupManager[name]; ok {
+		return GroupManager[name]
+	}
+
+	c, err := NewCache(strategy, maxBytes)
+	if err != nil {
+		logger.LogrusObj.Errorf("failed to create cache strategy: %w", err)
+	}
 
 	g := &Group{
 		name:      name,
-		getter:    getter,
-		mainCache: NewCache("lru", cacheBytes),
+		cache:     c,
+		retriever: retriever,
+		flight:    NewSingleFlight(10 * time.Second),
 	}
-	groups[name] = g
+
+	mu.Lock()
+	GroupManager[name] = g
+	mu.Unlock()
+
 	return g
 }
 
-// GetGroup returns the named group previously created with NewGroup, or
-// nil if there's no such group.
+// RegisterServer registers server Picker for Group
+func (g *Group) RegisterServer(p Picker) {
+	if g.server != nil {
+		panic("group had been registed server")
+	}
+	g.server = p
+}
+
+// GetGroup to get the Group object of the corresponding namespace (to manage the actual cache)
 func GetGroup(name string) *Group {
 	mu.RLock()
-	g := groups[name]
-	mu.RUnlock()
-	return g
+	defer mu.RUnlock()
+	return GroupManager[name]
 }
 
-// Get value for a key from cache.
+func DestroryGroup(name string) {
+	g := GetGroup(name)
+	if g != nil {
+		svr := g.server.(*Server)
+		svr.Stop()
+
+		delete(GroupManager, name)
+	}
+}
+
 func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
-		return ByteView{}, errors.New("key is required")
+		return ByteView{}, errors.New("key must be existed")
 	}
 
-	if v, ok := g.mainCache.get(key); ok {
-		logger.LogrusObj.Infof("[GeeCache] hit")
-		return v, nil
+	if value, ok := g.cache.get(key); ok {
+		logger.LogrusObj.Infof("Group %s 缓存命中..., key %s...", g.name, key)
+		return value, nil
 	}
 
+	// cache missing
 	return g.load(key)
 }
 
-// RegisterPeers registers a Picker for choosing remote peer.
-func (g *Group) RegisterPeers(peers Picker) {
-	if g.peers != nil {
-		logger.LogrusObj.Panic("RegisterPeerPicker called more than once")
-	}
-	g.peers = peers
-}
-
-// load loads key either by invoking the getter locally
-// or by sending it to other peers.
-func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peers != nil {
-		if peer, ok := g.peers.PickPeer(key); ok {
-			if value, err = g.getFromPeer(peer, key); err == nil {
-				return value, nil
+func (g *Group) load(key string) (ByteView, error) {
+	// singleFlight
+	view, err := g.flight.Do(key, func() (interface{}, error) {
+		if g.server != nil {
+			if fetcher, ok := g.server.Pick(key); ok {
+				bytes, err := fetcher.Fetch(g.name, key)
+				if err == nil {
+					return ByteView{b: cloneBytes(bytes)}, nil
+				}
+				logger.LogrusObj.Warnf("fetch key %s failed, error: %s\n", fetcher, err.Error())
 			}
-			logger.LogrusObj.Warnf("[GeeCache] Failed to get from peer: %v", err)
 		}
+		return g.getLocally(key)
+	})
+
+	if err == nil {
+		return view.(ByteView), nil
 	}
 
-	return g.getLocally(key)
+	return ByteView{}, err
 }
 
-// getFromPeer gets value from peer cache.
-func (g *Group) getFromPeer(peer Fetcher, key string) (ByteView, error) {
-	bytes, err := peer.Fetch(g.name, key)
-	if err != nil {
-		return ByteView{}, err
-	}
-	return ByteView{b: bytes}, nil
-}
-
-// getLocally calls the getter to get value and adds it to cache.
+// GetLocally retrieves data from Retriever and populates it into the cache
 func (g *Group) getLocally(key string) (ByteView, error) {
-	bytes, err := g.getter.Get(key)
+	bytes, err := g.retriever.retrieve(key)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.LogrusObj.Warnf("对于不存在的 key, 为了防止缓存穿透, 先存入缓存中并设置合理过期时间")
+			g.cache.put(key, ByteView{})
+		}
 		return ByteView{}, err
 	}
 
-	value := ByteView{b: bytes}
+	value := ByteView{b: cloneBytes(bytes)}
+
 	g.populateCache(key, value)
+
 	return value, nil
 }
 
-// populateCache adds value to cache.
+// Populate Cache populates the cache with data queried from the underlying database
 func (g *Group) populateCache(key string, value ByteView) {
-	g.mainCache.add(key, value)
+	g.cache.put(key, value)
 }

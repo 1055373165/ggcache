@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/1055373165/ggcache/pkg/common/logger"
@@ -9,51 +10,52 @@ import (
 )
 
 // Cache is a concurrent safe cache that evicts least recently used items.
-type Cache struct {
+type cache struct {
 	mu           sync.RWMutex
 	strategy     eviction.CacheStrategy
 	maxCacheSize int64
 }
 
 // NewCache creates a new Cache with the given maximum bytes capacity.
-func NewCache(strategy string, cacheSize int64) *Cache {
+// It returns an error if the strategy is invalid or if cacheSize is <= 0.
+func NewCache(strategy string, cacheSize int64) (*cache, error) {
+	if cacheSize <= 0 {
+		return nil, fmt.Errorf("cache size must be positive, got %d", cacheSize)
+	}
+
 	onEvicted := func(key string, val eviction.Value) {
-		logger.LogrusObj.Infof("缓存条目 [%s:%s] 被淘汰", key, val)
+		logger.LogrusObj.Infof("Cache entry evicted [key=%s]", key)
 	}
 
 	s, err := eviction.New(strategy, cacheSize, onEvicted)
 	if err != nil {
-		logger.LogrusObj.Errorf("eviction.New failed: %s", err)
-		return nil
+		return nil, fmt.Errorf("failed to create cache strategy: %w", err)
 	}
 
-	return &Cache{
+	return &cache{
 		maxCacheSize: cacheSize,
 		strategy:     s,
+	}, nil
+}
+
+// Get looks up a key's value from the cache.
+func (c *cache) get(key string) (value ByteView, ok bool) {
+	if c == nil {
+		return ByteView{}, false
 	}
-}
-
-// add adds a value to the cache.
-func (c *Cache) add(key string, value ByteView) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.strategy.Put(key, value)
-}
-
-// get looks up a key's value from the cache.
-func (c *Cache) get(key string) (ByteView, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	if v, _, ok := c.strategy.Get(key); ok {
-		return v.(ByteView), true
+	if v, _, exists := c.strategy.Get(key); exists {
+		if bv, ok := v.(ByteView); ok {
+			return bv, true
+		}
 	}
 	return ByteView{}, false
 }
 
 // put adds a value to the cache.
-func (c *Cache) put(key string, val ByteView) {
+func (c *cache) put(key string, val ByteView) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

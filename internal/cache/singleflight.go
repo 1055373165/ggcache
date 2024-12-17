@@ -5,14 +5,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1055373165/ggcache/utils/logger"
+	"github.com/1055373165/ggcache/pkg/common/logger"
 )
 
 // Call represents an in-flight or completed request to call a function.
+// It contains the value and error returned by the function, as well as a WaitGroup to wait for the function call to complete.
 type Call struct {
-	wg    sync.WaitGroup // Used to wait for the function call to complete
+	wg    sync.WaitGroup // Guards value and err
 	value interface{}    // The value returned by the function
-	err   error         // Any error returned by the function
+	err   error          // Any error that occurred
 }
 
 // cachedValue represents a cached result with an expiration time.
@@ -22,13 +23,14 @@ type cachedValue struct {
 }
 
 // SingleFlight manages function calls to prevent duplicate simultaneous calls.
-// It includes caching of results with TTL support.
+// It ensures that only one execution of the same function with the same key happens at a time, sharing the result with all callers.
+// It also includes caching of results with TTL support.
 type SingleFlight struct {
-	mu      sync.RWMutex                // Guards m and cache
-	m       map[string]*Call            // Keyed by function key
-	cache   map[string]*cachedValue     // Cache of function results
-	ttl     time.Duration              // How long to cache results
-	ticker  *time.Ticker               // For cache cleanup
+	mu     sync.RWMutex            // Protects m and cache
+	m      map[string]*Call        // Keyed by function key
+	cache  map[string]*cachedValue // Cache of function results
+	ttl    time.Duration           // How long to cache results
+	ticker *time.Ticker            // For cache cleanup
 }
 
 // NewSingleFlight creates a new SingleFlight instance with the specified TTL.
@@ -44,8 +46,8 @@ func NewSingleFlight(ttl time.Duration) *SingleFlight {
 	return sf
 }
 
-// Do executes the given function if there's no in-flight execution.
-// If there is an in-flight execution, it waits for and returns that result.
+// Do executes the given function if it's not already being executed for the given key.
+// If a duplicate call is made, the duplicate caller waits for the original to complete and receives the same results.
 // Results are cached for the configured TTL.
 //
 // Parameters:

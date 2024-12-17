@@ -9,9 +9,9 @@ import (
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
 	"github.com/1055373165/ggcache/config"
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
-	"github.com/1055373165/ggcache/internal/pkg/student/dao"
-	"github.com/1055373165/ggcache/utils/logger"
+	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
+	"github.com/1055373165/ggcache/internal/etcd/discovery"
+	"github.com/1055373165/ggcache/pkg/common/logger"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// 服务发现（直接根据服务名字获取与服务的虚拟端连接）
-	conn, err := discovery3.Discovery(cli, config.Conf.Services["groupcache"].Name)
+	conn, err := discovery.Discovery(cli, config.Conf.Services["groupcache"].Name)
 	if err != nil {
 		panic(err)
 	}

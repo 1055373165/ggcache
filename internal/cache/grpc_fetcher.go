@@ -1,72 +1,60 @@
-// Package cache implements a distributed cache system with various features.
 package cache
 
 import (
 	"context"
+
 	"fmt"
 	"time"
 
-	"github.com/1055373165/ggcache/internal/middleware/etcd/discovery/discovery3"
-	"github.com/1055373165/ggcache/api/groupcachepb"
-	"github.com/1055373165/ggcache/utils/logger"
+	pb "github.com/1055373165/ggcache/api/groupcachepb"
+	"github.com/1055373165/ggcache/internal/etcd/discovery"
+	"github.com/1055373165/ggcache/pkg/common/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// Client implements the Fetcher interface using gRPC.
+// 测试 Client 是否实现了 Fetcher 接口
+var _ Fetcher = (*Client)(nil)
+
+// The client module implements groupcache's ability to access other remote nodes to fetch caches.
 type Client struct {
-	serviceName string // Name of the service to fetch from
+	serviceName string // 服务名称 groupcache/ip:addr
 }
 
-// NewClient creates a new gRPC client for fetching cache values.
-func NewClient(service string) *Client {
-	return &Client{serviceName: service}
-}
-
-// Fetch retrieves a cache value from a remote peer using gRPC.
-//
-// Parameters:
-//   - group: The cache group name
-//   - key: The key to fetch
-//
-// Returns:
-//   - []byte: The fetched value
-//   - error: Any error encountered during the fetch
-//
-// The function performs service discovery using etcd, establishes a gRPC
-// connection to the selected peer, and makes a Get request with timeout.
+// Fetch gets the corresponding cache value from remote peer
 func (c *Client) Fetch(group string, key string) ([]byte, error) {
-	// Create etcd client
 	cli, err := clientv3.NewFromURL("http://localhost:2379")
 	if err != nil {
 		return nil, err
 	}
 	defer cli.Close()
 
-	// Discover service and establish connection
+	// Discover services and obtain connection to services
 	start := time.Now()
-	conn, err := discovery3.Discovery(cli, c.serviceName)
-	logger.LogrusObj.Warnf("gRPC dial took: %v ms", time.Since(start).Milliseconds())
+	conn, err := discovery.Discovery(cli, c.serviceName)
+	logger.LogrusObj.Warnf("本次 grpc dial 的耗时为: %v ms", time.Since(start).Milliseconds())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	// Create gRPC client and context with timeout
-	grpcClient := groupcachepb.NewGroupCacheClient(conn)
+	grpcClient := pb.NewGroupCacheClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
-	// Make gRPC call
+	// 使用带有超时自动取消的上下文和指定请求调用客户端的 Get 方法发起 rpc 请求调用
 	start = time.Now()
-	resp, err := grpcClient.Get(ctx, &groupcachepb.GetRequest{
+	resp, err := grpcClient.Get(ctx, &pb.GetRequest{
 		Group: group,
 		Key:   key,
 	})
-	logger.LogrusObj.Warnf("gRPC call took: %v ms", time.Since(start).Milliseconds())
+	logger.LogrusObj.Warnf("本次 grpc Call 的耗时为: %v ms", time.Since(start).Milliseconds())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get %s/%s from peer %s: %v", group, key, c.serviceName, err)
+		return nil, fmt.Errorf("could not get %s/%s from peer %s", group, key, c.serviceName)
 	}
 
 	return resp.Value, nil
+}
+
+func NewClient(service string) *Client {
+	return &Client{serviceName: service}
 }
