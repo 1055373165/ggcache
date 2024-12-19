@@ -3,7 +3,7 @@ mysql:
     port: 3306
     database: cachetest
     username: root
-    password: root
+    password: 1234
     charset: utf8mb4
 
 etcd:

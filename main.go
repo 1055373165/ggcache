@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	port        = flag.Int("port", 9999, "service node port")
-	metricsPort = flag.Int("metricsPort", 2112, "metrics port")
+	port        = flag.Int("port", 8888, "service node port")
+	metricsPort = flag.Int("metricsPort", 2222, "metrics port")
 )
 
 func main() {

@@ -87,7 +87,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_memstats_heap_alloc_bytes",
+          "expr": "go_memstats_heap_alloc_bytes{instance=\"$instance\"}",
           "legendFormat": "Heap Allocated",
           "refId": "A"
         },
@@ -96,7 +96,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_memstats_heap_inuse_bytes",
+          "expr": "go_memstats_heap_inuse_bytes{instance=\"$instance\"}",
           "legendFormat": "Heap In Use",
           "refId": "B"
         },
@@ -105,7 +105,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_memstats_heap_idle_bytes",
+          "expr": "go_memstats_heap_idle_bytes{instance=\"$instance\"}",
           "legendFormat": "Heap Idle",
           "refId": "C"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_goroutines",
+          "expr": "go_goroutines{instance=\"$instance\"}",
           "legendFormat": "Goroutines",
           "refId": "A"
         },
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_threads",
+          "expr": "go_threads{instance=\"$instance\"}",
           "legendFormat": "OS Threads",
           "refId": "B"
         }
@@ -287,7 +287,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_gc_duration_seconds{quantile=\"0.5\"}",
+          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.5\"}",
           "legendFormat": "GC Duration Median",
           "refId": "A"
         },
@@ -296,7 +296,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_gc_duration_seconds{quantile=\"0.75\"}",
+          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.75\"}",
           "legendFormat": "GC Duration P75",
           "refId": "B"
         },
@@ -305,7 +305,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_gc_duration_seconds{quantile=\"0.95\"}",
+          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.95\"}",
           "legendFormat": "GC Duration P95",
           "refId": "C"
         }
@@ -391,8 +391,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(promhttp_metric_handler_requests_total{code=\"200\"}[5m])",
-          "legendFormat": "Success Rate",
+          "expr": "rate(ggcache_gets_total{instance=\"$instance\"}[5m])",
+          "legendFormat": "Gets Rate",
           "refId": "A"
         },
         {
@@ -400,12 +400,21 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(promhttp_metric_handler_requests_total{code=~\"5.*\"}[5m])",
-          "legendFormat": "Error Rate",
+          "expr": "rate(ggcache_hits_total{instance=\"$instance\"}[5m])",
+          "legendFormat": "Hits Rate",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_cpu_seconds_total{instance=\"$instance\"}[5m])",
+          "legendFormat": "CPU Usage Rate",
+          "refId": "C"
         }
       ],
-      "title": "HTTP Metrics Handler Requests",
+      "title": "GGCache Metrics",
       "type": "timeseries"
     }
   ],
@@ -414,7 +423,35 @@
   "style": "dark",
   "tags": ["ggcache"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(up{job=\"ggcache\"}, instance)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "query": "label_values(up{job=\"ggcache\"}, instance)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",

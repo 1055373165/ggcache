@@ -185,6 +185,8 @@ func main() {
 			}
 			cancel()
 		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
