@@ -100,7 +100,6 @@ func (g *Group) Get(key string) (ByteView, error) {
 	}
 
 	if value, ok := g.cache.get(key); ok {
-		logger.LogrusObj.Infof("cache hit for group %q, key %q", g.name, key)
 		return value, nil
 	}
 

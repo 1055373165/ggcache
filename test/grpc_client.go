@@ -140,23 +140,32 @@ func main() {
 		panic(err)
 	}
 
-	names := []string{"王五", "张三", "李四", "王二", "不存在", "赵六", "李奇"}
-	for i := 0; i < 10; i++ {
-		names = append(names, fmt.Sprintf("不存在%d", i))
+	// 构造热点数据（20%的key承载80%的访问）
+	hotKeys := []string{"张三", "李四", "王五", "赵六", "王二"} // 热点key
+
+	// 构造长尾数据（80%的key承载20%的访问）
+	coldKeys := make([]string, 0)
+	for i := 0; i < 20; i++ {
+		coldKeys = append(coldKeys, fmt.Sprintf("student_%d", i))
 	}
-	for i := 0; i < 100; i++ {
-		names = append(names, fmt.Sprintf("%d", i))
+
+	// 构造最终的请求序列
+	totalRequests := 100 // 总请求数
+	names := make([]string, 0, totalRequests)
+
+	// 添加热点请求（80%的访问量）
+	hotRequestCount := int(float64(totalRequests) * 0.8) // 80%的请求量
+	for i := 0; i < hotRequestCount; i++ {
+		names = append(names, hotKeys[i%len(hotKeys)])
 	}
-	for i := 0; i < 100; i++ {
-		names = append(names, fmt.Sprintf("%d", i))
+
+	// 添加长尾请求（20%的访问量）
+	coldRequestCount := totalRequests - hotRequestCount // 剩余20%的请求量
+	for i := 0; i < coldRequestCount; i++ {
+		names = append(names, coldKeys[i%len(coldKeys)])
 	}
-	for i := 0; i < 100; i++ {
-		names = append(names, fmt.Sprintf("%d", i))
-	}
-	for i := 0; i < 100; i++ {
-		names = append(names, fmt.Sprintf("%d", i))
-	}
-	// 打散
+
+	// 随机打散请求顺序
 	rand.Shuffle(len(names), func(i, j int) {
 		names[i], names[j] = names[j], names[i]
 	})
@@ -175,7 +184,6 @@ func main() {
 				logger.LogrusObj.Infof("查询成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 			}
 			cancel()
-			time.Sleep(100 * time.Millisecond) // 控制请求速率
 		}
 	}
 }

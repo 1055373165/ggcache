@@ -39,7 +39,6 @@ func NewCache(strategy string, maxBytes int64) (*cache, error) {
 	}, nil
 }
 
-// get retrieves a value from the cache by its key.
 // It returns the value and whether the key was found.
 func (c *cache) get(key string) (ByteView, bool) {
 	if c == nil {

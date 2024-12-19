@@ -1,0 +1,156 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/1055373165/ggcache/test
+cpu: Apple M3 Pro
+=== RUN   BenchmarkCache
+BenchmarkCache
+=== RUN   BenchmarkCache/Low_Concurrency
+BenchmarkCache/Low_Concurrency
+time="2024-12-19 10:50:44" level=info msg="Current QPS: 12, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:45" level=info msg="Current QPS: 205, Avg Latency: 49ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:46" level=info msg="Current QPS: 30883, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:47" level=info msg="Current QPS: 70948, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:48" level=info msg="Current QPS: 110170, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:49" level=info msg="Current QPS: 149951, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:50" level=info msg="Current QPS: 190449, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:51" level=info msg="Current QPS: 230759, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:52" level=info msg="Current QPS: 271155, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:53" level=info msg="Current QPS: 310606, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:54" level=info msg="Current QPS: 310966, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:55" level=info msg="Current QPS: 346432, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:56" level=info msg="Current QPS: 383542, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:57" level=info msg="Current QPS: 418373, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:58" level=info msg="Current QPS: 455497, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:50:59" level=info msg="Current QPS: 491829, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:00" level=info msg="Current QPS: 524500, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:01" level=info msg="Current QPS: 560660, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:02" level=info msg="Current QPS: 597946, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:03" level=info msg="Current QPS: 634130, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:04" level=info msg="Current QPS: 671922, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:05" level=info msg="Current QPS: 709856, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:06" level=info msg="Current QPS: 750161, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:07" level=info msg="Current QPS: 765876, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:08" level=info msg="Current QPS: 772394, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:09" level=info msg="Current QPS: 802925, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:10" level=info msg="Current QPS: 840784, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:11" level=info msg="Current QPS: 861058, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:12" level=info msg="Current QPS: 893474, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:13" level=info msg="Current QPS: 927085, Avg Latency: 0ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+BenchmarkCache/Low_Concurrency-12                      1        30000850084 ns/op                0.3234 avg_latency_ms         100.0 cache_hit_%               0 failed_requests             1392 max_latency_ms                0.04871 min_latency_ms      30903 req/s               100.0 success_rate_%   4691828624 B/op  86197729 allocs/op
+=== RUN   BenchmarkCache/Medium_Concurrency
+BenchmarkCache/Medium_Concurrency
+time="2024-12-19 10:51:14" level=info msg="Current QPS: 40625, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:15" level=info msg="Current QPS: 85227, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:16" level=info msg="Current QPS: 130055, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:17" level=info msg="Current QPS: 175048, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:18" level=info msg="Current QPS: 216806, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:19" level=info msg="Current QPS: 257306, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:20" level=info msg="Current QPS: 304059, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:21" level=info msg="Current QPS: 354438, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:22" level=info msg="Current QPS: 400442, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:23" level=info msg="Current QPS: 450381, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:24" level=info msg="Current QPS: 499592, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:25" level=info msg="Current QPS: 550998, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:26" level=info msg="Current QPS: 602220, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:27" level=info msg="Current QPS: 654643, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:28" level=info msg="Current QPS: 707317, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:29" level=info msg="Current QPS: 758561, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:30" level=info msg="Current QPS: 810860, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:31" level=info msg="Current QPS: 863564, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:32" level=info msg="Current QPS: 915983, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:33" level=info msg="Current QPS: 962284, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:34" level=info msg="Current QPS: 1013115, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:35" level=info msg="Current QPS: 1063859, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:36" level=info msg="Current QPS: 1115739, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:37" level=info msg="Current QPS: 1167105, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:38" level=info msg="Current QPS: 1215420, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:39" level=info msg="Current QPS: 1267065, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:40" level=info msg="Current QPS: 1318511, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:41" level=info msg="Current QPS: 1369195, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:42" level=info msg="Current QPS: 1414304, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:43" level=info msg="Current QPS: 1459814, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+BenchmarkCache/Medium_Concurrency-12                   1        30001926291 ns/op                1.027 avg_latency_ms             100.0 cache_hit_%                 0 failed_requests              51.16 max_latency_ms                0.05904 min_latency_ms      48662 req/s               100.0 success_rate_%        7380856232 B/op 134709618 allocs/op
+=== RUN   BenchmarkCache/High_Concurrency
+BenchmarkCache/High_Concurrency
+time="2024-12-19 10:51:44" level=info msg="Current QPS: 51449, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:45" level=info msg="Current QPS: 102208, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:46" level=info msg="Current QPS: 153969, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:47" level=info msg="Current QPS: 205313, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:48" level=info msg="Current QPS: 257978, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:49" level=info msg="Current QPS: 307998, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:50" level=info msg="Current QPS: 361220, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:51" level=info msg="Current QPS: 413521, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:52" level=info msg="Current QPS: 465094, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:53" level=info msg="Current QPS: 514870, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:54" level=info msg="Current QPS: 563665, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:55" level=info msg="Current QPS: 615387, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:56" level=info msg="Current QPS: 665729, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:57" level=info msg="Current QPS: 714347, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:58" level=info msg="Current QPS: 761378, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:51:59" level=info msg="Current QPS: 803843, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:00" level=info msg="Current QPS: 853385, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:01" level=info msg="Current QPS: 904231, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:02" level=info msg="Current QPS: 955046, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:03" level=info msg="Current QPS: 1004565, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:04" level=info msg="Current QPS: 1052119, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:05" level=info msg="Current QPS: 1100515, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:06" level=info msg="Current QPS: 1149987, Avg Latency: 1ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:07" level=info msg="Current QPS: 1198265, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:08" level=info msg="Current QPS: 1246052, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:09" level=info msg="Current QPS: 1294457, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:10" level=info msg="Current QPS: 1341471, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:11" level=info msg="Current QPS: 1387708, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:12" level=info msg="Current QPS: 1434751, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+time="2024-12-19 10:52:13" level=info msg="Current QPS: 1483648, Avg Latency: 2ms, Success Rate: 100.00%, Cache Hit Rate: 100.00%, failed requests: 0"
+BenchmarkCache/High_Concurrency-12                     1        30003619416 ns/op                2.022 avg_latency_ms             100.0 cache_hit_%                 0 failed_requests              59.62 max_latency_ms                0.06004 min_latency_ms      49458 req/s               100.0 success_rate_%        7498026128 B/op 136833240 allocs/op
+{"level":"warn","ts":"2024-12-19T10:52:13.082491+0800","logger":"etcd-client","caller":"endpoints/endpoints_impl.go:124","msg":"watch closed","target":"GroupCache"}
+PASS
+ok      github.com/1055373165/ggcache/test      90.853s
+
+低并发（10个并发）：
+QPS: 从12逐步提升到927,085，最终稳定在约30,903 req/s
+平均延迟: 0.3234ms
+缓存命中率: 100%
+成功率: 100%
+内存分配: 4.69GB，86,197,729次分配
+中等并发（50个并发）：
+QPS: 从40,625提升到1,459,814，最终稳定在约48,662 req/s
+平均延迟: 1.027ms
+缓存命中率: 100%
+成功率: 100%
+内存分配: 7.38GB，134,709,618次分配
+高并发（100个并发）：
+QPS: 从51,449提升到1,483,648，最终稳定在约49,458 req/s
+平均延迟: 2.022ms
+缓存命中率: 100%
+成功率: 100%
+内存分配: 7.49GB，136,833,240次分配
+关键发现：
+
+性能表现：
+系统在所有并发级别下都表现稳定
+QPS随并发度提升而提升，但在中高并发时增长趋于平缓
+延迟随并发增加而增加，但仍保持在很低的水平（2ms以内）
+缓存效果：
+100%的缓存命中率说明二八原则的工作负载设计非常有效
+热点数据被很好地缓存和复用
+系统稳定性：
+所有测试场景下都达到100%的成功率
+没有失败请求
+系统在高负载下保持稳定
+资源消耗：
+内存分配随并发增加而增加
+中高并发场景下内存分配较大（7GB+）
+改进建议：
+
+内存优化：
+考虑实现内存池来减少分配次数
+优化对象复用机制
+性能优化：
+考虑增加连接池
+实现批量请求处理
+优化序列化/反序列化过程
+监控完善：
+添加内存使用监控
+添加GC监控
+添加系统资源使用监控
