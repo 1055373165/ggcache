@@ -77,15 +77,18 @@ func etcdAddEndpoint(client *clientv3.Client, leaseId clientv3.LeaseID, service 
 		return err
 	}
 
+	// Use string metadata to ensure comparability.
+	metadata := endpoints.Endpoint{
+		Addr:     addr,
+		Metadata: "weight:10;version:v1.0.0",
+	}
+
 	// Addr is the server address on which a connection will be established.
 	// Metadata is the information associated with Addr, which may be used to make load balancing decision.
 	// Endpoint represents a single address the connection can be established with.
 	return endpointsManager.AddEndpoint(context.TODO(),
-		fmt.Sprintf("%s/%s", service, addr), // Key
-		endpoints.Endpoint{Addr: addr, Metadata: map[string]interface{}{ // Value
-			"weight":  10, // The weight of the service instance being selected.
-			"version": "v1.0.0",
-		}},
+		fmt.Sprintf("%s/%s", service, addr),
+		metadata,
 		clientv3.WithLease(leaseId))
 }
 

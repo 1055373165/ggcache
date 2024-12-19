@@ -103,7 +103,7 @@ func (s *Server) SetPeers(peersAddrs []string) {
 			case <-s.stopSignal:
 				s.Stop()
 			default:
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second)
 			}
 		}
 	}()

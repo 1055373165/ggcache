@@ -2,29 +2,128 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"math"
-	"math/rand/v2"
+	"math/rand"
+	"sync"
+	"time"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
-	stuPb "github.com/1055373165/ggcache/api/studentpb"
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/pkg/common/logger"
-	"github.com/1055373165/ggcache/pkg/etcd/discovery"
+	discovery "github.com/1055373165/ggcache/pkg/etcd/discovery"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"gorm.io/gorm"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
-	MaxRetries = 3
+	ErrRPCCallNotFound  = "rpc error: code = Unknown desc = record not found"
+	MaxRetries          = 3
+	InitialRetryWaitSec = 1
 )
 
-// 第一次重试等待 1s
-// 第二次重试等待 2s
-// 第三次重试等待 4s
-func backoff(retry int) int {
-	return int(math.Pow(float64(2), float64(retry)))
+const (
+	NotFoundStatus Status = iota // 说明服务器没有查询到指定名字学生的分数
+	ErrorStatus                  // 说明服务器出现问题
+)
+
+type Status int
+
+type GGCacheClient struct {
+	etcdCli     *clientv3.Client
+	conn        *grpc.ClientConn
+	client      pb.GroupCacheClient
+	serviceName string
+	connected   bool
+	mu          sync.RWMutex
+}
+
+func NewGGCacheClient(etcdCli *clientv3.Client, serviceName string) (*GGCacheClient, error) {
+	client := &GGCacheClient{
+		etcdCli:     etcdCli,
+		serviceName: serviceName,
+	}
+	if err := client.connect(); err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func (c *GGCacheClient) connect() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	conn, err := discovery.Discovery(c.etcdCli, c.serviceName)
+	if err != nil {
+		return fmt.Errorf("failed to discover service: %v", err)
+	}
+
+	c.conn = conn
+	c.client = pb.NewGroupCacheClient(conn)
+	c.connected = true
+	return nil
+}
+
+func (c *GGCacheClient) Get(ctx context.Context, group, key string) (*pb.GetResponse, error) {
+	c.mu.RLock()
+	if !c.connected {
+		c.mu.RUnlock()
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+	} else {
+		c.mu.RUnlock()
+	}
+
+	var resp *pb.GetResponse
+	var lastErr error
+
+	retries := 0
+	maxRetries := 3
+	for retries < maxRetries {
+		select {
+		case <-ctx.Done():
+			if lastErr != nil {
+				return nil, lastErr
+			}
+			return nil, ctx.Err()
+		default:
+			var err error
+			resp, err = c.client.Get(ctx, &pb.GetRequest{
+				Group: group,
+				Key:   key,
+			})
+
+			if err != nil {
+				if status.Code(err) == codes.Unavailable {
+					// 连接断开，尝试重连
+					c.mu.Lock()
+					c.connected = false
+					c.mu.Unlock()
+					if reconnErr := c.connect(); reconnErr != nil {
+						lastErr = reconnErr
+						// 使用指数退避等待
+						waitTime := time.Duration(backoff(retries)) * time.Second
+						time.Sleep(waitTime)
+						retries++
+						continue
+					}
+				}
+				lastErr = err
+				retries++
+				continue
+			}
+			return resp, nil
+		}
+	}
+
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, fmt.Errorf("max retries exceeded")
 }
 
 func main() {
@@ -36,68 +135,61 @@ func main() {
 		panic(err)
 	}
 
-	// 服务发现（直接根据服务名字获取与服务的虚拟端连接）
-	conn, err := discovery.Discovery(cli, config.Conf.Services["groupcache"].Name)
+	ggcacheClient, err := NewGGCacheClient(cli, config.Conf.Services["groupcache"].Name)
 	if err != nil {
 		panic(err)
 	}
-	logger.LogrusObj.Debug("Discovery continue")
-	client_stub := pb.NewGroupCacheClient(conn)
 
-	// 为了模拟实际查询情况，将 names 数组中存在的名字和不存在的名字的分部比例设置为 10 : 1
-	// 然后为了尽可能随机，使用洗牌算法将数组内所有学生姓名打散
-	// 存在的名字中文 1000 个，英文 1000 个（已经存到数据库中了，测试集在主程序下方提供）
-	// 查询请求使用 100 个已经存在中文名和 100 个已经存在的英文名
-	// 使用不存在名字中文 10 个，英文 10 个
-
-	unExistChineseNames := dao.GenerateChineseNames(10)
-	unExistEnglishNames := dao.GenerateEnglishNames(10)
-
-	dbExistChineseNames := dao.GetGenerateChineseNames()
-	dbExistEnglishNames := dao.GetGenerateEnglishNames()
-
-	names := make([]string, 0, 20+len(*dbExistChineseNames)+len(*dbExistEnglishNames))
-	names = append(names, unExistChineseNames...)
-	names = append(names, unExistEnglishNames...)
-	names = append(names, *dbExistChineseNames...)
-	names = append(names, *dbExistEnglishNames...)
-
+	names := []string{"王五", "张三", "李四", "王二", "不存在", "赵六", "李奇"}
+	for i := 0; i < 10; i++ {
+		names = append(names, fmt.Sprintf("不存在%d", i))
+	}
+	for i := 0; i < 100; i++ {
+		names = append(names, fmt.Sprintf("%d", i))
+	}
+	for i := 0; i < 100; i++ {
+		names = append(names, fmt.Sprintf("%d", i))
+	}
+	for i := 0; i < 100; i++ {
+		names = append(names, fmt.Sprintf("%d", i))
+	}
+	for i := 0; i < 100; i++ {
+		names = append(names, fmt.Sprintf("%d", i))
+	}
 	// 打散
 	rand.Shuffle(len(names), func(i, j int) {
 		names[i], names[j] = names[j], names[i]
 	})
 
-	dao := dao.NewStudentDao(context.Background())
-	for _, name := range names {
-		dao.CreateStudent(&stuPb.StudentRequest{
-			Name:  name,
-			Score: rand.Float32() * 100,
-		})
-	}
-
 	for {
 		for _, name := range names {
-			searchFunc := func() (*pb.GetResponse, error) {
-				return client_stub.Get(context.Background(), &pb.GetRequest{
-					Group: "scores",
-					Key:   name,
-				})
-			}
-
-			for i := 0; i < MaxRetries; i++ {
-				resp, err := searchFunc()
-				if err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						logger.LogrusObj.Errorf("学生 %s 信息不在数据库中", name)
-						break
-					}
-					logger.LogrusObj.Errorf("本次查询学生 %s 分数的 rpc 调用出现故障，重试次数 %d", name, i+1)
-					// time.Sleep(time.Second * time.Duration(backoff(i))) // 退避算法
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			resp, err := ggcacheClient.Get(ctx, "scores", name)
+			if err != nil {
+				if ErrorHandle(err) == NotFoundStatus {
+					logger.LogrusObj.Warnf("查询不到学生 %s 的成绩", name)
 				} else {
-					logger.LogrusObj.Infof("rpc 调用成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
-					break
+					logger.LogrusObj.Errorf("查询学生 %s 分数失败: %v", name, err)
 				}
+			} else {
+				logger.LogrusObj.Infof("查询成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 			}
+			cancel()
+			time.Sleep(100 * time.Millisecond) // 控制请求速率
 		}
 	}
+}
+
+func ErrorHandle(err error) Status {
+	if err.Error() == ErrRPCCallNotFound {
+		return NotFoundStatus
+	}
+	return ErrorStatus
+}
+
+// First retry wait 1s
+// Second retry wait 2s
+// The third retry waits for 4 seconds
+func backoff(retry int) int {
+	return int(math.Pow(float64(2), float64(retry)))
 }

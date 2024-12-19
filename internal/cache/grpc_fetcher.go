@@ -43,7 +43,7 @@ func (c *Client) Fetch(group string, key string) ([]byte, error) {
 	defer conn.Close()
 
 	grpcClient := pb.NewGroupCacheClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	start := time.Now()
