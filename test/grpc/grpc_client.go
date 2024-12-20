@@ -78,52 +78,36 @@ func (c *GGCacheClient) Get(ctx context.Context, group, key string) (*pb.GetResp
 		c.mu.RUnlock()
 	}
 
-	var resp *pb.GetResponse
 	var lastErr error
+	for retry := 0; retry < MaxRetries; retry++ {
+		resp, err := c.client.Get(ctx, &pb.GetRequest{
+			Group: group,
+			Key:   key,
+		})
 
-	retries := 0
-	maxRetries := 3
-	for retries < maxRetries {
-		select {
-		case <-ctx.Done():
-			if lastErr != nil {
-				return nil, lastErr
-			}
-			return nil, ctx.Err()
-		default:
-			var err error
-			resp, err = c.client.Get(ctx, &pb.GetRequest{
-				Group: group,
-				Key:   key,
-			})
-
-			if err != nil {
-				if status.Code(err) == codes.Unavailable {
-					// 连接断开，尝试重连
-					c.mu.Lock()
-					c.connected = false
-					c.mu.Unlock()
-					if reconnErr := c.connect(); reconnErr != nil {
-						lastErr = reconnErr
-						// 使用指数退避等待
-						waitTime := time.Duration(backoff(retries)) * time.Second
-						time.Sleep(waitTime)
-						retries++
-						continue
-					}
-				}
-				lastErr = err
-				retries++
-				continue
-			}
+		if err == nil {
 			return resp, nil
 		}
+
+		lastErr = err
+		if status.Code(err) == codes.Unavailable {
+			// 连接断开，尝试重连
+			c.mu.Lock()
+			c.connected = false
+			c.mu.Unlock()
+
+			if reconnErr := c.connect(); reconnErr != nil {
+				lastErr = reconnErr
+			}
+		}
+
+		// 使用指数退避等待
+		waitTime := time.Duration(backoff(retry)) * time.Second
+		logger.LogrusObj.Warnf("第 %d 次重试失败，等待 %v 后重试: %v", retry+1, waitTime, err)
+		time.Sleep(waitTime)
 	}
 
-	if lastErr != nil {
-		return nil, lastErr
-	}
-	return nil, fmt.Errorf("max retries exceeded")
+	return nil, fmt.Errorf("max retries exceeded: %v", lastErr)
 }
 
 func main() {
@@ -172,21 +156,18 @@ func main() {
 
 	for {
 		for _, name := range names {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx := context.Background()
 			resp, err := ggcacheClient.Get(ctx, "scores", name)
 			if err != nil {
 				if ErrorHandle(err) == NotFoundStatus {
 					logger.LogrusObj.Warnf("查询不到学生 %s 的成绩", name)
-				} else {
-					logger.LogrusObj.Errorf("查询学生 %s 分数失败: %v", name, err)
+					continue
 				}
-			} else {
-				logger.LogrusObj.Infof("查询成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
+				logger.LogrusObj.Errorf("查询学生 %s 分数失败: %v", name, err)
+				return // 如果不是 NotFound 错误，直接退出程序
 			}
-			cancel()
+			logger.LogrusObj.Infof("查询成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 		}
-
-		time.Sleep(500 * time.Millisecond)
 	}
 }
 

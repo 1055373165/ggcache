@@ -34,7 +34,7 @@ services:
 
 groupManager:
     strategy: "arc"
-    maxCacheSize: 1024000
+    maxCacheSize: 10240000
 
 domain:
     student:

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/1055373165/ggcache/internal/metrics"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"gorm.io/gorm"
 )
@@ -98,6 +99,8 @@ func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
 		return ByteView{}, fmt.Errorf("key cannot be empty")
 	}
+
+	metrics.RecordRequest()
 
 	if value, ok := g.cache.get(key); ok {
 		return value, nil

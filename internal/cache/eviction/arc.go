@@ -5,6 +5,9 @@ import (
 	"container/list"
 	"sync"
 	"time"
+
+	"github.com/1055373165/ggcache/internal/metrics"
+	"github.com/1055373165/ggcache/pkg/common/logger"
 )
 
 // CacheUseARC implements the Adaptive Replacement Cache (ARC) algorithm.
@@ -46,6 +49,7 @@ type CacheUseARC struct {
 func NewCacheUseARC(maxBytes int64, onEvicted func(string, Value)) *CacheUseARC {
 	c := &CacheUseARC{
 		maxBytes:        maxBytes,
+		nbytes:          0,
 		p:               0,
 		t1:              list.New(),
 		t2:              list.New(),
@@ -54,10 +58,14 @@ func NewCacheUseARC(maxBytes int64, onEvicted func(string, Value)) *CacheUseARC 
 		cache:           make(map[string]*list.Element),
 		ghost:           make(map[string]*list.Element),
 		OnEvicted:       onEvicted,
-		cleanupInterval: defaultCleanupInterval,
-		ttl:             defaultTTL,
+		cleanupInterval: time.Minute,
 		stopCleanup:     make(chan struct{}),
 	}
+	metrics.UpdateCacheSize(0)      // Initialize cache size to 0
+	metrics.UpdateCacheItemCount(0) // Initialize item count to 0
+	c.updateARCMetrics()            // Initialize ARC metrics
+
+	logger.LogrusObj.Warnf("NewCacheUseARC: maxBytes=%d", maxBytes)
 
 	go c.cleanupRoutine()
 	return c
@@ -126,6 +134,9 @@ func (c *CacheUseARC) Put(key string, value Value) {
 		} else {
 			c.t2.MoveToFront(ele)
 		}
+		metrics.UpdateCacheSize(c.nbytes)
+		metrics.UpdateCacheItemCount(int64(len(c.cache)))
+		c.updateARCMetrics()
 		return
 	}
 
@@ -148,6 +159,7 @@ func (c *CacheUseARC) Put(key string, value Value) {
 	// Make space if needed
 	for c.nbytes+newSize > c.maxBytes {
 		c.evict()
+		metrics.RecordEviction()
 	}
 
 	// Add new entry to T1
@@ -162,6 +174,9 @@ func (c *CacheUseARC) Put(key string, value Value) {
 	ele := c.t1.PushFront(entry)
 	c.cache[key] = ele
 	c.nbytes += newSize
+	metrics.UpdateCacheSize(c.nbytes)
+	metrics.UpdateCacheItemCount(int64(len(c.cache)))
+	c.updateARCMetrics()
 }
 
 // evict removes one entry based on the ARC algorithm
@@ -184,6 +199,8 @@ func (c *CacheUseARC) evict() {
 func (c *CacheUseARC) removeEntry(ele *list.Element, entry *arcEntry, fromT1 bool) {
 	c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
 	delete(c.cache, entry.Key)
+	metrics.UpdateCacheSize(c.nbytes)
+	metrics.UpdateCacheItemCount(int64(len(c.cache)))
 
 	if fromT1 {
 		c.t1.Remove(ele)
@@ -214,6 +231,13 @@ func (c *CacheUseARC) removeEntry(ele *list.Element, entry *arcEntry, fromT1 boo
 	if c.OnEvicted != nil {
 		c.OnEvicted(entry.Key, entry.Value)
 	}
+
+	c.updateARCMetrics()
+}
+
+// updateARCMetrics updates ARC-specific metrics
+func (c *CacheUseARC) updateARCMetrics() {
+	metrics.UpdateARCMetrics(c.t1.Len(), c.t2.Len(), c.b1.Len(), c.b2.Len(), int(c.p))
 }
 
 // cleanupRoutine periodically removes expired entries

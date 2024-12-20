@@ -4,8 +4,10 @@ package cache
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/1055373165/ggcache/internal/cache/eviction"
+	"github.com/1055373165/ggcache/internal/metrics"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 )
 
@@ -45,15 +47,22 @@ func (c *cache) get(key string) (ByteView, bool) {
 		return ByteView{}, false
 	}
 
+	start := time.Now()
+	defer func() {
+		metrics.ObserveRequestDuration("get", time.Since(start).Seconds())
+	}()
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	if v, _, exists := c.strategy.Get(key); exists {
 		if bv, ok := v.(ByteView); ok {
+			metrics.RecordCacheHit()
 			return bv, true
 		}
 		logger.LogrusObj.Warnf("Invalid cache value type for key=%s", key)
 	}
+	metrics.RecordCacheMiss()
 	return ByteView{}, false
 }
 
@@ -63,6 +72,11 @@ func (c *cache) put(key string, value ByteView) {
 	if c == nil {
 		return
 	}
+
+	start := time.Now()
+	defer func() {
+		metrics.ObserveRequestDuration("put", time.Since(start).Seconds())
+	}()
 
 	c.mu.Lock()
 	defer c.mu.Unlock()

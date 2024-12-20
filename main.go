@@ -3,14 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/internal/cache"
+	"github.com/1055373165/ggcache/internal/metrics"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"github.com/1055373165/ggcache/pkg/etcd/discovery"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -23,17 +22,8 @@ func main() {
 	dao.InitDB()
 	flag.Parse()
 
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
-	// 添加一个简单的重定向，从根路径跳转到 /metrics
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/metrics", http.StatusFound)
-	})
-	go func() {
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", *metricsPort), mux); err != nil {
-			logger.LogrusObj.Fatalf("Failed to start metrics server: %v", err)
-		}
-	}()
+	// 启动指标收集服务
+	metrics.StartMetricsServer(*metricsPort)
 	logger.LogrusObj.Infof("Metrics server started on port %d", *metricsPort)
 
 	serviceAddr := fmt.Sprintf("localhost:%d", *port)

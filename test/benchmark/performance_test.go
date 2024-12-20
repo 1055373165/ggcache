@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,9 +13,104 @@ import (
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/pkg/common/logger"
+	"github.com/1055373165/ggcache/pkg/etcd/discovery"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/exp/rand"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+const (
+	ErrRPCCallNotFound  = "rpc error: code = Unknown desc = record not found"
+	MaxRetries          = 3
+	InitialRetryWaitSec = 1
+)
+
+const (
+	NotFoundStatus Status = iota // 说明服务器没有查询到指定名字学生的分数
+	ErrorStatus                  // 说明服务器出现问题
+)
+
+type Status int
+
+type GGCacheClient struct {
+	etcdCli     *clientv3.Client
+	conn        *grpc.ClientConn
+	client      pb.GroupCacheClient
+	serviceName string
+	connected   bool
+	mu          sync.RWMutex
+}
+
+func NewGGCacheClient(etcdCli *clientv3.Client, serviceName string) (*GGCacheClient, error) {
+	client := &GGCacheClient{
+		etcdCli:     etcdCli,
+		serviceName: serviceName,
+	}
+	if err := client.connect(); err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func (c *GGCacheClient) connect() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	conn, err := discovery.Discovery(c.etcdCli, c.serviceName)
+	if err != nil {
+		return fmt.Errorf("failed to discover service: %v", err)
+	}
+
+	c.conn = conn
+	c.client = pb.NewGroupCacheClient(conn)
+	c.connected = true
+	return nil
+}
+
+func (c *GGCacheClient) Get(ctx context.Context, group, key string) (*pb.GetResponse, error) {
+	c.mu.RLock()
+	if !c.connected {
+		c.mu.RUnlock()
+		if err := c.connect(); err != nil {
+			return nil, err
+		}
+	} else {
+		c.mu.RUnlock()
+	}
+
+	var lastErr error
+	for retry := 0; retry < MaxRetries; retry++ {
+		resp, err := c.client.Get(ctx, &pb.GetRequest{
+			Group: group,
+			Key:   key,
+		})
+
+		if err == nil {
+			return resp, nil
+		}
+
+		lastErr = err
+		if status.Code(err) == codes.Unavailable {
+			// 连接断开，尝试重连
+			c.mu.Lock()
+			c.connected = false
+			c.mu.Unlock()
+
+			if reconnErr := c.connect(); reconnErr != nil {
+				lastErr = reconnErr
+			}
+		}
+
+		// 使用指数退避等待
+		waitTime := time.Duration(backoff(retry)) * time.Second
+		logger.LogrusObj.Warnf("第 %d 次重试失败，等待 %v 后重试: %v", retry+1, waitTime, err)
+		time.Sleep(waitTime)
+	}
+
+	return nil, fmt.Errorf("max retries exceeded: %v", lastErr)
+}
 
 type Metrics struct {
 	totalRequests   int64
@@ -242,4 +338,11 @@ func updateLatencyStats(metrics *Metrics, latency int64) {
 
 func isCacheHit(resp *pb.GetResponse) bool {
 	return resp.Value != nil
+}
+
+// First retry wait 1s
+// Second retry wait 2s
+// The third retry waits for 4 seconds
+func backoff(retry int) int {
+	return int(math.Pow(float64(2), float64(retry)))
 }

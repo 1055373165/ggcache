@@ -57,8 +57,7 @@
                 "value": null
               }
             ]
-          },
-          "unit": "bytes"
+          }
         },
         "overrides": []
       },
@@ -87,8 +86,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_memstats_heap_alloc_bytes{instance=\"$instance\"}",
-          "legendFormat": "Heap Allocated",
+          "expr": "rate(ggcache_hits_total[5m])",
+          "legendFormat": "Cache Hits Rate",
           "refId": "A"
         },
         {
@@ -96,21 +95,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_memstats_heap_inuse_bytes{instance=\"$instance\"}",
-          "legendFormat": "Heap In Use",
+          "expr": "rate(ggcache_misses_total[5m])",
+          "legendFormat": "Cache Misses Rate",
           "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_memstats_heap_idle_bytes{instance=\"$instance\"}",
-          "legendFormat": "Heap Idle",
-          "refId": "C"
         }
       ],
-      "title": "Memory Usage",
+      "title": "Cache Hit/Miss Rate",
       "type": "timeseries"
     },
     {
@@ -162,7 +152,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -191,21 +182,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_goroutines{instance=\"$instance\"}",
-          "legendFormat": "Goroutines",
+          "expr": "100 * rate(ggcache_hits_total[1m]) / clamp_min(rate(ggcache_hits_total[1m]) + rate(ggcache_misses_total[1m]), 0.001)",
+          "legendFormat": "Cache Hit Ratio",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_threads{instance=\"$instance\"}",
-          "legendFormat": "OS Threads",
-          "refId": "B"
         }
       ],
-      "title": "Goroutines and Threads",
+      "title": "Cache Hit Ratio",
       "type": "timeseries"
     },
     {
@@ -258,7 +240,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -271,7 +253,7 @@
       "id": 3,
       "options": {
         "legend": {
-          "calcs": ["mean", "max", "p95"],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -287,30 +269,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.5\"}",
-          "legendFormat": "GC Duration Median",
+          "expr": "ggcache_size_bytes",
+          "legendFormat": "Cache Size",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.75\"}",
-          "legendFormat": "GC Duration P75",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "go_gc_duration_seconds{instance=\"$instance\",quantile=\"0.95\"}",
-          "legendFormat": "GC Duration P95",
-          "refId": "C"
         }
       ],
-      "title": "Garbage Collection Duration",
+      "title": "Cache Size",
       "type": "timeseries"
     },
     {
@@ -391,8 +355,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(ggcache_gets_total{instance=\"$instance\"}[5m])",
-          "legendFormat": "Gets Rate",
+          "expr": "ggcache_items_total",
+          "legendFormat": "Cache Items",
           "refId": "A"
         },
         {
@@ -400,8 +364,104 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(ggcache_hits_total{instance=\"$instance\"}[5m])",
-          "legendFormat": "Hits Rate",
+          "expr": "rate(ggcache_evictions_total[5m])",
+          "legendFormat": "Eviction Rate",
+          "refId": "B"
+        }
+      ],
+      "title": "Cache Items and Evictions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
+          "legendFormat": "Get P50",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
+          "legendFormat": "Get P95",
           "refId": "B"
         },
         {
@@ -409,12 +469,487 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(process_cpu_seconds_total{instance=\"$instance\"}[5m])",
-          "legendFormat": "CPU Usage Rate",
+          "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
+          "legendFormat": "Get P99",
           "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "Put P50",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "Put P95",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "Put P99",
+          "refId": "F"
         }
       ],
-      "title": "GGCache Metrics",
+      "title": "Cache Operation Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_t1_size",
+          "legendFormat": "T1 (Recent)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_t2_size",
+          "legendFormat": "T2 (Frequent)",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_b1_size",
+          "legendFormat": "B1 (Ghost T1)",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_b2_size",
+          "legendFormat": "B2 (Ghost T2)",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_target_size",
+          "legendFormat": "Target Size (p)",
+          "refId": "E"
+        }
+      ],
+      "title": "ARC Cache Lists",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_t1_size",
+          "legendFormat": "T1 (Recent)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_t2_size",
+          "legendFormat": "T2 (Frequent)",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_b1_size",
+          "legendFormat": "B1 (Ghost T1)",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_b2_size",
+          "legendFormat": "B2 (Ghost T2)",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ggcache_arc_target_size",
+          "legendFormat": "Target Size (p)",
+          "refId": "E"
+        }
+      ],
+      "title": "ARC Cache Lists",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 2
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "P50 Latency",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.90, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "P90 Latency",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "P99 Latency",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.999, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
+          "legendFormat": "P99.9 Latency",
+          "refId": "D"
+        }
+      ],
+      "title": "Cache Put Latency Distribution",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(ggcache_requests_total[1m]))",
+          "legendFormat": "QPS",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests QPS",
       "type": "timeseries"
     }
   ],
@@ -434,15 +969,15 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(up{job=\"ggcache\"}, instance)",
+        "definition": "label_values(ggcache_hits_total)",
         "hide": 0,
         "includeAll": true,
-        "label": "Instance",
+        "label": "Service",
         "multi": false,
-        "name": "instance",
+        "name": "service",
         "options": [],
         "query": {
-          "query": "label_values(up{job=\"ggcache\"}, instance)",
+          "query": "label_values(ggcache_hits_total)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
