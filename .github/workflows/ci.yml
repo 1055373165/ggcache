@@ -19,7 +19,9 @@ jobs:
           go-version: '1.21'
 
       - name: Install dependencies
-        run: go mod download
+        run: |
+          go mod download
+          go mod tidy
 
       - name: Run unit tests
         run: go test -v ./... -coverprofile=coverage.txt
@@ -40,10 +42,16 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Install dependencies
+        run: |
+          go mod download
+          go mod tidy
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
+          args: --timeout=5m
 
   build:
     name: Build and Push
