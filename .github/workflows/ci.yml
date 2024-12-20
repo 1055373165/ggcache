@@ -52,6 +52,12 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          only-new-issues: false
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
+          install-mode: binary
 
   build:
     name: Build and Push
