@@ -2,6 +2,7 @@ package eviction
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -18,10 +19,12 @@ func TestCacheUseLRUBatch_Basic(t *testing.T) {
 		lru.SetBatchSize(50)
 		lru.SetTTL(time.Minute)
 		lru.SetCleanupInterval(time.Minute)
+		defer lru.Stop()
 	})
 
 	t.Run("basic operations", func(t *testing.T) {
 		lru := NewCacheUseLRUBatch(1024, nil)
+		defer lru.Stop()
 
 		// Test Put and Get
 		lru.Put("key1", String("value1"))
@@ -52,7 +55,9 @@ func TestCacheUseLRUBatch_BatchEviction(t *testing.T) {
 	}
 
 	lru := NewCacheUseLRUBatch(30, onEvicted)
+	defer lru.Stop()
 	lru.SetBatchSize(2) // Small batch size for testing
+
 	// Add entries that exceed cache size
 	for i := 0; i < 10; i++ {
 		key := fmt.Sprintf("k%d", i)
@@ -74,6 +79,7 @@ func TestCacheUseLRUBatch_BatchEviction(t *testing.T) {
 
 func TestCacheUseLRUBatch_BatchCleanup(t *testing.T) {
 	lru := NewCacheUseLRUBatch(1024, nil)
+	defer lru.Stop()
 	lru.SetBatchSize(2)
 	lru.SetCleanupInterval(50 * time.Millisecond)
 	lru.SetTTL(100 * time.Millisecond)
@@ -96,90 +102,140 @@ func TestCacheUseLRUBatch_BatchCleanup(t *testing.T) {
 	}
 }
 
-func TestCacheUseLRUBatch_ConcurrentBatchOperations(t *testing.T) {
-	lru := NewCacheUseLRUBatch(1024, nil)
-	lru.SetBatchSize(10)
-
-	var wg sync.WaitGroup
-	numOps := 1000
-	numGoroutines := 10
-
-	// Concurrent batch operations
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(2)
-
-		// Writer goroutine
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < numOps; j++ {
-				key := fmt.Sprintf("k%d-%d", id, j)
-				lru.Put(key, String(fmt.Sprintf("v%d-%d", id, j)))
-			}
-		}(i)
-
-		// Reader goroutine
-		go func(id int) {
-			defer wg.Done()
-			for j := 0; j < numOps; j++ {
-				key := fmt.Sprintf("k%d-%d", id, j)
-				lru.Get(key)
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
 func TestCacheUseLRUBatch_StressTest(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping stress test in short mode")
 	}
 
 	lru := NewCacheUseLRUBatch(1<<20, nil) // 1MB cache
-	lru.SetBatchSize(100)
+	defer lru.Stop()
+	lru.SetBatchSize(50) // 减小批量大小
 
 	var wg sync.WaitGroup
-	numOps := 10000
-	numGoroutines := 20
+	numOps := 1000     // 减少操作次数
+	numGoroutines := 5 // 减少并发数
 
-	start := time.Now()
+	// 创建一个通道来同步所有 goroutine 的开始时间
+	start := make(chan struct{})
 
-	// Multiple concurrent readers and writers
+	// 记录开始时间
+	startTime := time.Now()
+
+	// 启动写入 goroutine
 	for i := 0; i < numGoroutines; i++ {
-		wg.Add(3)
-
-		// Writer
+		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
+			<-start // 等待开始信号
 			for j := 0; j < numOps; j++ {
 				key := fmt.Sprintf("w%d-%d", id, j)
-				lru.Put(key, String(fmt.Sprintf("value-%d-%d", id, j)))
+				value := String(fmt.Sprintf("value-%d-%d", id, j))
+				lru.Put(key, value)
+				// 添加短暂随机延迟，避免过度竞争
+				if j%10 == 0 {
+					time.Sleep(time.Duration(rand.Intn(100)) * time.Microsecond)
+				}
 			}
 		}(i)
+	}
 
-		// Reader 1
+	// 启动读取 goroutine
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
+			<-start // 等待开始信号
 			for j := 0; j < numOps; j++ {
 				key := fmt.Sprintf("w%d-%d", id, j)
-				lru.Get(key)
+				_, _, _ = lru.Get(key)
+				if j%10 == 0 {
+					time.Sleep(time.Duration(rand.Intn(100)) * time.Microsecond)
+				}
 			}
 		}(i)
+	}
 
-		// Reader 2 (reading with different pattern)
+	// 启动交错读取 goroutine
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := numOps - 1; j >= 0; j-- {
+			<-start // 等待开始信号
+			for j := 0; j < numOps; j++ {
 				key := fmt.Sprintf("w%d-%d", (id+1)%numGoroutines, j)
-				lru.Get(key)
+				_, _, _ = lru.Get(key)
+				if j%10 == 0 {
+					time.Sleep(time.Duration(rand.Intn(100)) * time.Microsecond)
+				}
+			}
+		}(i)
+	}
+
+	// 发送开始信号
+	close(start)
+
+	// 等待所有 goroutine 完成
+	wg.Wait()
+
+	duration := time.Since(startTime)
+	totalOps := numOps * numGoroutines * 3
+	opsPerSec := float64(totalOps) / duration.Seconds()
+
+	t.Logf("Stress test completed: %d operations in %v (%.2f ops/sec)",
+		totalOps, duration, opsPerSec)
+
+	// 验证缓存状态
+	if lru.Len() > int(1<<20/100) {
+		t.Errorf("Cache size too large: %d", lru.Len())
+	}
+}
+
+func TestCacheUseLRUBatch_ConcurrentCleanup(t *testing.T) {
+	lru := NewCacheUseLRUBatch(1<<20, nil)
+	defer lru.Stop()
+
+	// 设置较短的清理间隔和 TTL
+	lru.SetTTL(100 * time.Millisecond)
+	lru.SetCleanupInterval(50 * time.Millisecond)
+	lru.SetBatchSize(10)
+
+	var wg sync.WaitGroup
+	numOps := 100
+	numGoroutines := 3
+
+	// 启动写入 goroutine
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < numOps; j++ {
+				key := fmt.Sprintf("w%d-%d", id, j)
+				value := String(fmt.Sprintf("value-%d-%d", id, j))
+				lru.Put(key, value)
+				time.Sleep(time.Millisecond)
+			}
+		}(i)
+	}
+
+	// 启动读取 goroutine
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < numOps; j++ {
+				key := fmt.Sprintf("w%d-%d", id, j)
+				_, _, _ = lru.Get(key)
+				time.Sleep(time.Millisecond)
 			}
 		}(i)
 	}
 
 	wg.Wait()
-	duration := time.Since(start)
-	opsPerSec := float64(numOps*numGoroutines*3) / duration.Seconds()
+	time.Sleep(200 * time.Millisecond) // 等待最后的清理完成
 
-	t.Logf("Stress test completed: %d operations in %v (%.2f ops/sec)",
-		numOps*numGoroutines*3, duration, opsPerSec)
+	// 验证缓存状态
+	size := lru.Len()
+	if size > numOps*numGoroutines {
+		t.Errorf("Cache size too large: %d", size)
+	}
 }

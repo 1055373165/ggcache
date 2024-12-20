@@ -15,13 +15,13 @@ type CacheUseLRUBatch struct {
 	maxBytes        int64
 	nbytes          int64
 	root            *list.List
-	mu              sync.RWMutex
 	cache           map[string]*list.Element
 	OnEvicted       func(key string, value Value)
 	cleanupInterval time.Duration
 	ttl             time.Duration
 	stopCleanup     chan struct{}
 	batchSize       int
+	mu              sync.RWMutex
 }
 
 // NewCacheUseLRUBatch creates a new LRU cache with batch processing capabilities.
@@ -33,16 +33,26 @@ func NewCacheUseLRUBatch(maxBytes int64, onEvicted func(string, Value)) *CacheUs
 		OnEvicted:       onEvicted,
 		cleanupInterval: defaultCleanupInterval,
 		ttl:             defaultTTL,
-		stopCleanup:     make(chan struct{}),
 		batchSize:       defaultBatchSize,
 	}
-
-	go c.cleanupRoutine()
 	return c
+}
+
+// Start starts the cleanup routine.
+func (c *CacheUseLRUBatch) Start() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.stopCleanup == nil {
+		c.stopCleanup = make(chan struct{})
+		go c.cleanupRoutine()
+	}
 }
 
 // SetBatchSize sets the size for batch operations.
 func (c *CacheUseLRUBatch) SetBatchSize(size int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if size > 0 {
 		c.batchSize = size
 	}
@@ -50,17 +60,32 @@ func (c *CacheUseLRUBatch) SetBatchSize(size int) {
 
 // SetTTL sets the time-to-live for cache entries.
 func (c *CacheUseLRUBatch) SetTTL(ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.ttl = ttl
 }
 
 // SetCleanupInterval sets the interval between cleanup runs.
 func (c *CacheUseLRUBatch) SetCleanupInterval(interval time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.stopCleanup != nil {
+		close(c.stopCleanup)
+	}
 	c.cleanupInterval = interval
+	c.Start()
 }
 
 // Stop stops the cleanup routine.
 func (c *CacheUseLRUBatch) Stop() {
-	close(c.stopCleanup)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.stopCleanup != nil {
+		close(c.stopCleanup)
+		c.stopCleanup = nil
+	}
 }
 
 // cleanupRoutine periodically cleans up expired entries.
@@ -78,52 +103,15 @@ func (c *CacheUseLRUBatch) cleanupRoutine() {
 	}
 }
 
-// CleanUp removes all expired entries from the cache in batches.
-func (c *CacheUseLRUBatch) CleanUp(ttl time.Duration) {
-	for {
-		expired := make([]*list.Element, 0, c.batchSize)
-
-		// First pass: identify expired entries with read lock
-		c.mu.RLock()
-		var next *list.Element
-		count := 0
-		for e := c.root.Front(); e != nil && count < c.batchSize; e = next {
-			next = e.Next()
-			if e.Value != nil && e.Value.(*Entry).Expired(ttl) {
-				expired = append(expired, e)
-			}
-			count++
-		}
-		hasMore := next != nil
-		c.mu.RUnlock()
-
-		// Second pass: remove expired entries with write lock
-		if len(expired) > 0 {
-			c.mu.Lock()
-			for _, e := range expired {
-				if e.Value != nil && e.Value.(*Entry).Expired(ttl) {
-					c.removeElement(e)
-				}
-			}
-			c.mu.Unlock()
-		}
-
-		if !hasMore {
-			break
-		}
-	}
-}
-
 // Get retrieves a value from the cache.
 func (c *CacheUseLRUBatch) Get(key string) (value Value, updateAt time.Time, ok bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock() // 使用写锁，因为 MoveToFront 会修改链表结构
+	defer c.mu.Unlock()
 
-	if ele, ok := c.cache[key]; ok {
-		c.root.MoveToBack(ele)
-		e := ele.Value.(*Entry)
-		e.Touch()
-		return e.Value, e.UpdateAt, true
+	if elem, hit := c.cache[key]; hit {
+		entry := elem.Value.(*Entry)
+		c.root.MoveToFront(elem)
+		return entry.Value, entry.UpdateAt, true
 	}
 	return nil, time.Time{}, false
 }
@@ -133,28 +121,25 @@ func (c *CacheUseLRUBatch) Put(key string, value Value) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if ele, ok := c.cache[key]; ok {
-		c.root.MoveToBack(ele)
-		entry := ele.Value.(*Entry)
+	if elem, ok := c.cache[key]; ok {
+		c.root.MoveToFront(elem)
+		entry := elem.Value.(*Entry)
 		c.nbytes += int64(value.Len()) - int64(entry.Value.Len())
 		entry.Value = value
-		entry.Touch()
+		entry.UpdateAt = time.Now()
 	} else {
 		entry := &Entry{
 			Key:      key,
 			Value:    value,
 			UpdateAt: time.Now(),
 		}
-		ele := c.root.PushBack(entry)
-		c.cache[key] = ele
+		elem := c.root.PushFront(entry)
+		c.cache[key] = elem
 		c.nbytes += int64(len(key)) + int64(value.Len())
 	}
 
-	// Batch eviction
-	for c.maxBytes != 0 && c.maxBytes < c.nbytes {
-		if !c.removeOldestBatch() {
-			break
-		}
+	for c.maxBytes != 0 && c.nbytes > c.maxBytes {
+		c.removeOldestBatch()
 	}
 }
 
@@ -165,21 +150,47 @@ func (c *CacheUseLRUBatch) removeOldestBatch() bool {
 	}
 
 	removed := 0
-	for e := c.root.Front(); e != nil && removed < c.batchSize; e = c.root.Front() {
-		c.removeElement(e)
+	for removed < c.batchSize {
+		elem := c.root.Back()
+		if elem == nil {
+			break
+		}
+		entry := elem.Value.(*Entry)
+		delete(c.cache, entry.Key)
+		c.root.Remove(elem)
+		c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
+		if c.OnEvicted != nil {
+			c.OnEvicted(entry.Key, entry.Value)
+		}
 		removed++
 	}
 
 	return removed > 0
 }
 
-// removeElement removes an element from the cache.
-func (c *CacheUseLRUBatch) removeElement(e *list.Element) {
-	entry := c.root.Remove(e).(*Entry)
-	delete(c.cache, entry.Key)
-	c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
-	if c.OnEvicted != nil {
-		c.OnEvicted(entry.Key, entry.Value)
+// CleanUp removes all expired entries from the cache.
+func (c *CacheUseLRUBatch) CleanUp(ttl time.Duration) {
+	if ttl <= 0 {
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+	for elem := c.root.Back(); elem != nil; {
+		entry := elem.Value.(*Entry)
+		if now.Sub(entry.UpdateAt) < ttl {
+			break
+		}
+		nextElem := elem.Prev()
+		delete(c.cache, entry.Key)
+		c.root.Remove(elem)
+		c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
+		if c.OnEvicted != nil {
+			c.OnEvicted(entry.Key, entry.Value)
+		}
+		elem = nextElem
 	}
 }
 

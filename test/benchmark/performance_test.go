@@ -177,9 +177,9 @@ func BenchmarkCache(b *testing.B) {
 		duration    time.Duration
 		keySpace    int // 用于生成不同的key范围
 	}{
-		{"Low_Concurrency", 10, 30 * time.Second, 1000},
-		{"Medium_Concurrency", 50, 30 * time.Second, 1000},
-		{"High_Concurrency", 100, 30 * time.Second, 1000},
+		{"Low_Concurrency", 10, 5 * time.Second, 1000},
+		{"Medium_Concurrency", 50, 5 * time.Second, 1000},
+		{"High_Concurrency", 100, 5 * time.Second, 1000},
 	}
 
 	for _, tt := range tests {

@@ -31,6 +31,7 @@ type CacheUseLRU struct {
 	cleanupInterval time.Duration
 	ttl             time.Duration
 	stopCleanup     chan struct{}
+	mu              sync.RWMutex
 }
 
 // NewCacheUseLRU creates a new segmented LRU cache with the specified maximum size and eviction callback.
@@ -70,11 +71,15 @@ func (c *CacheUseLRU) getSegment(key string) *segment {
 
 // SetTTL sets the time-to-live for cache entries.
 func (c *CacheUseLRU) SetTTL(ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.ttl = ttl
 }
 
 // SetCleanupInterval sets the interval between cleanup runs.
 func (c *CacheUseLRU) SetCleanupInterval(interval time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// Stop existing cleanup routine
 	close(c.stopCleanup)
 
@@ -88,6 +93,8 @@ func (c *CacheUseLRU) SetCleanupInterval(interval time.Duration) {
 
 // Stop stops the cleanup routine.
 func (c *CacheUseLRU) Stop() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	close(c.stopCleanup)
 }
 
@@ -168,6 +175,8 @@ func (c *CacheUseLRU) Put(key string, value Value) {
 }
 
 func (c *CacheUseLRU) CleanUp(ttl time.Duration) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	for _, seg := range c.segments {
 		c.cleanupSegment(seg, ttl)
 	}
@@ -193,6 +202,8 @@ func (seg *segment) removeElement(e *list.Element) {
 
 // Len returns the total number of items in the cache.
 func (c *CacheUseLRU) Len() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	total := 0
 	for _, seg := range c.segments {
 		seg.mu.RLock()

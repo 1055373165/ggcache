@@ -286,12 +286,28 @@ func (c *CacheUseARC) SetTTL(ttl time.Duration) {
 
 // SetCleanupInterval sets the interval between cleanup runs
 func (c *CacheUseARC) SetCleanupInterval(interval time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.stopCleanup != nil {
+		close(c.stopCleanup)
+	}
+
 	c.cleanupInterval = interval
+	c.stopCleanup = make(chan struct{})
+
+	go c.cleanupRoutine()
 }
 
 // Stop stops the cleanup routine
 func (c *CacheUseARC) Stop() {
-	close(c.stopCleanup)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.stopCleanup != nil {
+		close(c.stopCleanup)
+		c.stopCleanup = nil
+	}
 }
 
 // Len returns the number of items in the cache
