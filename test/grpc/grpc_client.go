@@ -168,6 +168,7 @@ func main() {
 			}
 			logger.LogrusObj.Infof("查询成功, 学生 %s 的成绩为 %s", name, string(resp.Value))
 		}
+		time.Sleep(time.Millisecond * 100)
 	}
 }
 

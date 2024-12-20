@@ -36,13 +36,13 @@ go run main.go -port 9999 &
 sleep 3
 
 echo "Starting server on port 10000..."
-go run main.go -port 10000 -metricsPort 2223 &
+go run main.go -port 10000 -metricsPort 2223 -pprofPort 6061 &
 
 # Wait for the second server to start
 sleep 3
 
 echo "Starting server on port 10001..."
-go run main.go -port 10001 -metricsPort 2224 &
+go run main.go -port 10001 -metricsPort 2224 -pprofPort 6062 &
 
 # Wait for the third server to start
 sleep 3

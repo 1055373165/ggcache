@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
@@ -13,14 +15,24 @@ import (
 )
 
 var (
-	port        = flag.Int("port", 8888, "service node port")
+	port        = flag.Int("port", 9999, "service node port")
 	metricsPort = flag.Int("metricsPort", 2222, "metrics port")
+	pprofPort   = flag.Int("pprofPort", 6060, "pprof port")
 )
 
 func main() {
 	config.InitConfig()
 	dao.InitDB()
 	flag.Parse()
+
+	// 启动pprof服务器
+	go func() {
+		pprofAddr := fmt.Sprintf("localhost:%d", *pprofPort)
+		logger.LogrusObj.Infof("Starting pprof server on %s", pprofAddr)
+		if err := http.ListenAndServe(pprofAddr, nil); err != nil {
+			logger.LogrusObj.Errorf("Failed to start pprof server: %v", err)
+		}
+	}()
 
 	// 启动指标收集服务
 	metrics.StartMetricsServer(*metricsPort)
@@ -49,6 +61,7 @@ func main() {
 	gm["scores"].RegisterServer(svr)
 
 	if err := svr.Start(); err != nil {
-		logger.LogrusObj.Fatalf("server failed to start: %v", err)
+		logger.LogrusObj.Fatalf("failed to start server: %v", err)
+		return
 	}
 }

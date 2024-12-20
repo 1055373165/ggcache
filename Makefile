@@ -34,16 +34,6 @@ test-http:
 	@echo "Running HTTP test..."
 	./test/http/http_test1.sh
 
-# 运行 gRPC 压力测试
-benchmark-grpc:
-	@echo "Running gRPC benchmark..."
-	TEST_TYPE=grpc ./test/benchmark/benchmark.sh
-
-# 运行 HTTP 压力测试
-benchmark-http:
-	@echo "Running HTTP benchmark..."
-	TEST_TYPE=http ./test/benchmark/benchmark.sh
-
 # 清理
 clean:
 	@echo "Cleaning up..."

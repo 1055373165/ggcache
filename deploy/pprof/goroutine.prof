@@ -1,0 +1,13 @@
+Showing nodes accounting for 108, 100% of 108 total
+Showing top 10 nodes out of 90
+      flat  flat%   sum%        cum   cum%
+       106 98.15% 98.15%        106 98.15%  runtime.gopark
+         1  0.93% 99.07%          1  0.93%  runtime.goroutineProfileWithLabels
+         1  0.93%   100%          1  0.93%  syscall.syscall
+         0     0%   100%          1  0.93%  bufio.(*Reader).Peek
+         0     0%   100%         25 23.15%  bufio.(*Reader).Read
+         0     0%   100%          1  0.93%  bufio.(*Reader).fill
+         0     0%   100%          1  0.93%  context.(*cancelCtx).propagateCancel.func2
+         0     0%   100%          1  0.93%  database/sql.(*DB).connectionCleaner
+         0     0%   100%          1  0.93%  database/sql.(*DB).connectionOpener
+         0     0%   100%          2  1.85%  github.com/1055373165/ggcache/internal/cache.(*FlightGroup).cleanupLoop

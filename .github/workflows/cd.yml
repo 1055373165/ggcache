@@ -1,0 +1,36 @@
+name: Deployment
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          
+      - name: Deploy to CentOS server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          scp deploy/centos/start.sh $DEPLOY_USER@$DEPLOY_HOST:/tmp/
+          scp deploy/prometheus/prometheus.yml $DEPLOY_USER@$DEPLOY_HOST:/tmp/
+          ssh $DEPLOY_USER@$DEPLOY_HOST "sudo mkdir -p /etc/prometheus"
+          ssh $DEPLOY_USER@$DEPLOY_HOST "sudo cp /tmp/prometheus.yml /etc/prometheus/"
+          ssh $DEPLOY_USER@$DEPLOY_HOST "chmod +x /tmp/start.sh && sudo /tmp/start.sh $DOCKERHUB_USERNAME"

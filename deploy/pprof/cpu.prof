@@ -1,0 +1,14 @@
+Showing nodes accounting for 6.73s, 95.46% of 7.05s total
+Dropped 151 nodes (cum <= 0.04s)
+Showing top 10 nodes out of 82
+      flat  flat%   sum%        cum   cum%
+     3.41s 48.37% 48.37%      3.41s 48.37%  syscall.syscall
+     1.86s 26.38% 74.75%      1.86s 26.38%  runtime.kevent
+     0.68s  9.65% 84.40%      0.68s  9.65%  runtime.pthread_cond_wait
+     0.50s  7.09% 91.49%      0.50s  7.09%  runtime.pthread_cond_signal
+     0.09s  1.28% 92.77%      0.09s  1.28%  runtime.usleep
+     0.08s  1.13% 93.90%      0.12s  1.70%  runtime.mallocgc
+     0.05s  0.71% 94.61%      0.10s  1.42%  runtime.stealWork
+     0.03s  0.43% 95.04%      0.04s  0.57%  runtime.pcvalue
+     0.02s  0.28% 95.32%      1.42s 20.14%  google.golang.org/grpc/internal/transport.(*http2Server).HandleStreams
+     0.01s  0.14% 95.46%      0.06s  0.85%  runtime.gcBgMarkWorker.func2
