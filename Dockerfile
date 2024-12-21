@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     make \
     gcc \
     libc-dev \
-    lsof
+    lsof \
+    build-base
 
 # 设置工作目录
 WORKDIR /app
