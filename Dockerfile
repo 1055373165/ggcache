@@ -23,10 +23,9 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 安装 goreman
-RUN go get github.com/mattn/goreman && \
-    cd $GOPATH/pkg/mod/github.com/mattn/goreman@* && \
-    go build -o /go/bin/goreman .
+# 安装 goreman (禁用 CGO 并使用特定版本)
+ENV CGO_ENABLED=0
+RUN go install github.com/mattn/goreman@v0.3.15
 
 # 设置环境变量
 ENV ETCD_CLUSTER_ENDPOINTS="http://127.0.0.1:2379,http://127.0.0.1:22379,http://127.0.0.1:32379"
