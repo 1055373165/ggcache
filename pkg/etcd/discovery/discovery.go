@@ -23,9 +23,10 @@ func Discovery(c *clientv3.Client, service string) (*grpc.ClientConn, error) {
 
 	// Note that the name of the service here must be consistent
 	// with the name of the service when it is registered.
-	return grpc.Dial("etcd:///"+service,
+	return grpc.NewClient("etcd:///"+service,
 		grpc.WithResolvers(etcdResolver),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
 }
 
 // Go to the service registration center to find a list of

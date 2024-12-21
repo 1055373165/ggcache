@@ -59,7 +59,10 @@ func Register(service string, addr string, stop chan error) error {
 		case _, ok := <-alive: // Lease keepalive response.
 			if !ok {
 				logger.LogrusObj.Error("keepalive channel closed, revoke given lease")
-				etcdDelEndpoint(cli, service, addr)
+				// Delete the endpoint from etcd
+				if err := etcdDelEndpoint(cli, service, addr); err != nil {
+					logger.LogrusObj.Errorf("Failed to delete endpoint: %v", err)
+				}
 				return fmt.Errorf("keepalive channel closed, revoke given lease") //If a non-nil error is returned, the upper layer will close stopsChan  which in turn shuts down the server.
 			}
 		default:

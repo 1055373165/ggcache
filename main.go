@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 
@@ -22,7 +23,10 @@ var (
 
 func main() {
 	config.InitConfig()
-	dao.InitDB()
+	// Initialize database
+	if err := dao.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 	flag.Parse()
 
 	// 启动pprof服务器

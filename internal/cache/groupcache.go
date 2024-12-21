@@ -81,7 +81,9 @@ func DestroyGroup(name string) {
 	g := GetGroup(name)
 	if g != nil {
 		if server, ok := g.server.(*Server); ok {
-			server.Stop()
+			if err := server.Stop(); err != nil {
+				logger.LogrusObj.Errorf("Failed to stop server: %v", err)
+			}
 		}
 		// Stop the flight group and clear its cache
 		if g.flight != nil {

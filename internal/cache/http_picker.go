@@ -62,7 +62,11 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(view.Bytes())
+	if _, err := w.Write(view.Bytes()); err != nil {
+		logger.LogrusObj.Errorf("Failed to write response: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (p *HTTPPool) Log(format string, v ...interface{}) {

@@ -39,31 +39,39 @@ func InitilizeTestData() {
 	names := []string{"王五", "张三", "李四", "王二", "赵六", "李奇"}
 
 	for _, name := range names {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  name,
 			Score: float32(rand.Int31n(10000)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %s: %v", name, err)
+		}
 	}
 
 	for i := 0; i < 1000; i++ {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  fmt.Sprintf("%d", i),
 			Score: float32(rand.Int31n(100)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %d: %v", i, err)
+		}
 	}
 
 	for _, name := range *GetGenerateEnglishNames() {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  name,
 			Score: float32(rand.Int31n(10000)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %s: %v", name, err)
+		}
 	}
 
 	for _, name := range *GetGenerateChineseNames() {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  name,
 			Score: float32(rand.Int31n(10000)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %s: %v", name, err)
+		}
 	}
 }
 
@@ -79,17 +87,21 @@ func InitilizeDB() {
 	names := []string{"王五", "张三", "李四", "王二", "赵六", "李奇"}
 
 	for _, name := range names {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  name,
 			Score: float32(rand.Int31n(10000)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %s: %v", name, err)
+		}
 	}
 
 	for i := 0; i < 1000; i++ {
-		d.CreateStudent(&stuPb.StudentRequest{
+		if err := d.CreateStudent(&stuPb.StudentRequest{
 			Name:  fmt.Sprintf("%d", i),
 			Score: float32(rand.Int31n(100)),
-		})
+		}); err != nil {
+			logger.LogrusObj.Errorf("Failed to create student %d: %v", i, err)
+		}
 	}
 
 	logger.LogrusObj.Infoln("测试数据导入成功...")

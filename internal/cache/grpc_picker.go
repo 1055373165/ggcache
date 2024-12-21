@@ -101,7 +101,10 @@ func (s *Server) SetPeers(peersAddrs []string) {
 			case <-s.updateChan:
 				s.reconstruct()
 			case <-s.stopSignal:
-				s.Stop()
+				if err := s.Stop(); err != nil {
+					logger.LogrusObj.Errorf("Failed to stop server: %v", err)
+				}
+				return
 			default:
 				time.Sleep(2 * time.Second)
 			}
@@ -193,7 +196,19 @@ func (s *Server) Start() error {
 
 	// Start service registration in background
 	errChan := make(chan error, 1)
-	go s.registerService(lis, errChan)
+	go func() {
+		defer func() {
+			if s != nil {
+				if err := s.Stop(); err != nil {
+					logger.LogrusObj.Errorf("Failed to stop server: %v", err)
+				}
+			}
+		}()
+		err := s.registerService(lis, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
 
 	// Start serving requests
 	if err := s.serveRequests(grpcServer, lis); err != nil {
@@ -231,7 +246,7 @@ func (s *Server) setupGRPCServer() *grpc.Server {
 	return grpcServer
 }
 
-func (s *Server) registerService(lis net.Listener, errChan chan error) {
+func (s *Server) registerService(lis net.Listener, errChan chan error) error {
 	defer func() {
 		if err := lis.Close(); err != nil {
 			logger.LogrusObj.Errorf("failed to close listener: %v", err)
@@ -242,12 +257,13 @@ func (s *Server) registerService(lis net.Listener, errChan chan error) {
 	if err != nil {
 		logger.LogrusObj.Errorf("failed to register service: %v", err)
 		errChan <- err
-		return
+		return err
 	}
 
 	// Wait for stop signal
 	<-s.stopSignal
 	logger.LogrusObj.Infof("service %s unregistered", s.addr)
+	return nil
 }
 
 func (s *Server) serveRequests(grpcServer *grpc.Server, lis net.Listener) error {

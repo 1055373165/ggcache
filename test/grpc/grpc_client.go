@@ -112,7 +112,9 @@ func (c *GGCacheClient) Get(ctx context.Context, group, key string) (*pb.GetResp
 
 func main() {
 	config.InitConfig()
-	dao.InitDB()
+	if err := dao.InitDB(); err != nil {
+		logger.LogrusObj.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	cli, err := clientv3.New(config.DefaultEtcdConfig)
 	if err != nil {

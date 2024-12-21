@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 
 	"github.com/1055373165/ggcache/config"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
@@ -17,7 +18,9 @@ var (
 
 func main() {
 	config.InitConfig()
-	dao.InitDB()
+	if err := dao.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 	flag.Parse()
 
 	// grpc node local service address
@@ -44,6 +47,8 @@ func main() {
 
 	gm["scores"].RegisterServer(svr)
 
-	// start grpc service
-	svr.Start()
+	// Start the server
+	if err := svr.Start(); err != nil {
+		logger.LogrusObj.Fatalf("Failed to start server: %v", err)
+	}
 }
