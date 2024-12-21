@@ -4,7 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: smy/ggcache
+    image: sun4965485/ggcache:latest
+    container_name: ggcache
     networks:
       - monitoring
 
