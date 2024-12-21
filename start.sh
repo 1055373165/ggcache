@@ -24,13 +24,14 @@ echo "Starting etcd cluster..."
 goreman -f pkg/etcd/cluster/Procfile start &
 
 echo "Starting docker containers..."
+
 docker-compose up -d
 
 # Wait a bit for services to initialize
 sleep 5
 
 echo "Starting server on port 9999..."
-go run main.go -port 9999 &
+go run main.go -port 9999 -metricsPort 2222 -pprofPort 6060 &
 
 # Wait for the first server to start
 sleep 3

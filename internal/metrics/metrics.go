@@ -4,6 +4,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,63 +13,99 @@ import (
 )
 
 var (
+	// 添加实例标识符
+	instanceName string
+
 	// 缓存命中相关指标
 	cacheHits = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "ggcache_hits_total",
 		Help: "The total number of cache hits",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	cacheMisses = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "ggcache_misses_total",
 		Help: "The total number of cache misses",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	cacheEvictions = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "ggcache_evictions_total",
 		Help: "The total number of cache evictions",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	// 总请求数指标
 	requestsTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "ggcache_requests_total",
 		Help: "The total number of requests received",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	// 缓存大小相关指标
 	cacheSize = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_size_bytes",
 		Help: "The current size of the cache in bytes",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	cacheItemCount = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_items_total",
 		Help: "The total number of items in the cache",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	// ARC 缓存特定指标
 	arcT1Size = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_arc_t1_size",
 		Help: "Number of items in ARC T1 list (recently used once)",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	arcT2Size = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_arc_t2_size",
 		Help: "Number of items in ARC T2 list (frequently used)",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	arcB1Size = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_arc_b1_size",
 		Help: "Number of items in ARC B1 list (ghost entries for T1)",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	arcB2Size = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_arc_b2_size",
 		Help: "Number of items in ARC B2 list (ghost entries for T2)",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	arcTargetSize = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "ggcache_arc_target_size",
 		Help: "Target size for T1 (p) in ARC algorithm",
+		ConstLabels: prometheus.Labels{
+			"instance": instanceName,
+		},
 	})
 
 	// 请求延迟指标
@@ -78,9 +115,18 @@ var (
 			Help:    "Time spent processing cache requests",
 			Buckets: prometheus.ExponentialBuckets(0.00001, 2, 20), // from 10µs to ~5s
 		},
-		[]string{"operation"},
+		[]string{"operation", "instance"},
 	)
 )
+
+func init() {
+	// 获取主机名作为实例标识符
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+	instanceName = hostname
+}
 
 // StartMetricsServer 启动指标收集服务器
 func StartMetricsServer(port int) {
@@ -140,7 +186,7 @@ func UpdateARCMetrics(t1Size, t2Size, b1Size, b2Size, targetSize int) {
 
 // ObserveRequestDuration records the duration of a cache operation
 func ObserveRequestDuration(operation string, duration float64) {
-	requestDuration.WithLabelValues(operation).Observe(duration)
+	requestDuration.WithLabelValues(operation, instanceName).Observe(duration)
 }
 
 // RecordRequest increments the total request counter

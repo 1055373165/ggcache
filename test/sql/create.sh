@@ -5,7 +5,7 @@ USER="root"
 PASS="root"
 HOST="127.0.0.1"
 PORT="3306"
-DBNAME="cachetest"
+DBNAME="ggcache"
 
 # 使用 mysql_config_editor 存储 MySQL 用户名和密码
 # 运行以下命令来配置 MySQL 用户名和密码（只需运行一次）

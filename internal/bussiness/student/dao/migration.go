@@ -24,6 +24,9 @@ func migration() {
 		os.Exit(1)
 	}
 
+	// Initialize test data when creating a table for the first time
+	InitilizeTestData()
+
 	logger.LogrusObj.Info("register table success")
 }
 

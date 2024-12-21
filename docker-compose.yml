@@ -1,14 +1,5 @@
 # Docker Compose configuration for monitoring services
 services:
-  ggcache:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: sun4965485/ggcache:latest
-    container_name: ggcache
-    networks:
-      - monitoring
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -28,7 +19,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3001:3000"
+      - "3000:3000"
     volumes:
       - ./deploy/grafana/provisioning:/etc/grafana/provisioning
       - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards
@@ -41,6 +32,24 @@ services:
     networks:
       - monitoring
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=ggcache
+      - MYSQL_USER=ggcache
+      - MYSQL_PASSWORD=ggcache
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - monitoring
+
 networks:
   monitoring:
     driver: bridge
+
+volumes:
+  mysql_data:

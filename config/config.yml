@@ -1,9 +1,9 @@
 mysql:
     host: localhost
-    port: 3306
-    database: cachetest
-    username: root
-    password: root
+    port: 3307
+    database: ggcache
+    username: ggcache
+    password: ggcache
     charset: utf8mb4
 
 etcd:

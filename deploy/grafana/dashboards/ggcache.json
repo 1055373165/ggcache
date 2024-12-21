@@ -7,11 +7,13 @@
   "graphTooltip": 0,
   "links": [],
   "liveNow": false,
+  "autoSave": false,
+  "saveable": true,
   "panels": [
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -83,8 +85,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "rate(ggcache_hits_total[5m])",
           "legendFormat": "Cache Hits Rate",
@@ -92,8 +94,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "rate(ggcache_misses_total[5m])",
           "legendFormat": "Cache Misses Rate",
@@ -105,8 +107,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -179,8 +181,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "100 * rate(ggcache_hits_total[1m]) / clamp_min(rate(ggcache_hits_total[1m]) + rate(ggcache_misses_total[1m]), 0.001)",
           "legendFormat": "Cache Hit Ratio",
@@ -192,8 +194,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -266,8 +268,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_size_bytes",
           "legendFormat": "Cache Size",
@@ -279,8 +281,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -352,8 +354,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_items_total",
           "legendFormat": "Cache Items",
@@ -361,8 +363,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "rate(ggcache_evictions_total[5m])",
           "legendFormat": "Eviction Rate",
@@ -374,8 +376,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -448,8 +450,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.5, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
           "legendFormat": "Get P50",
@@ -457,8 +459,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.95, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
           "legendFormat": "Get P95",
@@ -466,8 +468,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"get\"}[5m])) by (le))",
           "legendFormat": "Get P99",
@@ -475,8 +477,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.5, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "Put P50",
@@ -484,8 +486,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.95, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "Put P95",
@@ -493,8 +495,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "Put P99",
@@ -506,8 +508,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -562,7 +564,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "id": 10,
       "options": {
@@ -580,8 +582,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_arc_t1_size",
           "legendFormat": "T1 (Recent)",
@@ -589,8 +591,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_arc_t2_size",
           "legendFormat": "T2 (Frequent)",
@@ -598,8 +600,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_arc_b1_size",
           "legendFormat": "B1 (Ghost T1)",
@@ -607,8 +609,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_arc_b2_size",
           "legendFormat": "B2 (Ghost T2)",
@@ -616,8 +618,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "ggcache_arc_target_size",
           "legendFormat": "Target Size (p)",
@@ -629,131 +631,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "ggcache_arc_t1_size",
-          "legendFormat": "T1 (Recent)",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "ggcache_arc_t2_size",
-          "legendFormat": "T2 (Frequent)",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "ggcache_arc_b1_size",
-          "legendFormat": "B1 (Ghost T1)",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "ggcache_arc_b2_size",
-          "legendFormat": "B2 (Ghost T2)",
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "ggcache_arc_target_size",
-          "legendFormat": "Target Size (p)",
-          "refId": "E"
-        }
-      ],
-      "title": "ARC Cache Lists",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -827,8 +706,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.50, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "P50 Latency",
@@ -836,8 +715,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.90, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "P90 Latency",
@@ -845,8 +724,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.99, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "P99 Latency",
@@ -854,8 +733,8 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "histogram_quantile(0.999, sum(rate(ggcache_request_duration_seconds_bucket{operation=\"put\"}[5m])) by (le))",
           "legendFormat": "P99.9 Latency",
@@ -867,8 +746,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "Prometheus",
+        "uid": "Prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -941,8 +820,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "Prometheus",
+            "uid": "Prometheus"
           },
           "expr": "sum(rate(ggcache_requests_total[1m]))",
           "legendFormat": "QPS",
@@ -962,25 +841,25 @@
       {
         "current": {
           "selected": true,
-          "text": "All",
-          "value": "$__all"
+          "text": "instance",
+          "value": "instance"
         },
         "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
+          "type": "Prometheus",
+          "uid": "Prometheus"
         },
-        "definition": "label_values(ggcache_hits_total)",
+        "definition": "label_values(instance)",
         "hide": 0,
-        "includeAll": true,
-        "label": "Service",
+        "includeAll": false,
+        "label": "instance",
         "multi": false,
-        "name": "service",
+        "name": "instance",
         "options": [],
         "query": {
-          "query": "label_values(ggcache_hits_total)",
+          "query": "label_values(instance)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 2,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,

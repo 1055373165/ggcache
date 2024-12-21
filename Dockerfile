@@ -9,7 +9,17 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libc-dev \
     lsof \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# 安装 etcd
+RUN ETCD_VER=v3.5.11 && \
+DOWNLOAD_URL=https://github.com/etcd-io/etcd/releases/download && \
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o etcd.tar.gz && \
+tar xzvf etcd.tar.gz && \
+mv etcd-${ETCD_VER}-linux-amd64/etcd /usr/local/bin/ && \
+mv etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/ && \
+rm -rf etcd-${ETCD_VER}-linux-amd64 etcd.tar.gz
 
 # 设置工作目录
 WORKDIR /app
