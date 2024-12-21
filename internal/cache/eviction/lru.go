@@ -152,12 +152,15 @@ func (c *CacheUseLRU) Put(key string, value Value) {
 	seg.mu.Lock()
 	defer seg.mu.Unlock()
 
+	newBytes := int64(len(key)) + int64(value.Len())
+
 	if ele, ok := seg.cache[key]; ok {
-		seg.ll.MoveToBack(ele)
 		entry := ele.Value.(*Entry)
-		seg.nbytes += int64(value.Len()) - int64(entry.Value.Len())
+		oldBytes := int64(len(entry.Key)) + int64(entry.Value.Len())
 		entry.Value = value
 		entry.Touch()
+		seg.nbytes = seg.nbytes - oldBytes + newBytes
+		seg.ll.MoveToBack(ele)
 	} else {
 		entry := &Entry{
 			Key:      key,
@@ -166,9 +169,10 @@ func (c *CacheUseLRU) Put(key string, value Value) {
 		}
 		ele := seg.ll.PushBack(entry)
 		seg.cache[key] = ele
-		seg.nbytes += int64(len(key)) + int64(value.Len())
+		seg.nbytes += newBytes
 	}
 
+	// Keep removing oldest entries until we're under maxBytes
 	for seg.maxBytes != 0 && seg.maxBytes < seg.nbytes {
 		seg.removeOldest()
 	}
@@ -202,12 +206,10 @@ func (seg *segment) removeElement(e *list.Element) {
 
 // Len returns the total number of items in the cache.
 func (c *CacheUseLRU) Len() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 	total := 0
 	for _, seg := range c.segments {
 		seg.mu.RLock()
-		total += seg.ll.Len()
+		total += len(seg.cache) // Use map length instead of list length
 		seg.mu.RUnlock()
 	}
 	return total

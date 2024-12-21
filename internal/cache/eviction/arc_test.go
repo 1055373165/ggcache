@@ -44,19 +44,51 @@ func TestCacheUseARC_Eviction(t *testing.T) {
 		evicted = append(evicted, key)
 	}
 
-	// Create a small cache
+	// Create a cache that can hold 2 entries
+	// Each entry takes 10 bytes: 4 bytes for key (e.g., "key0") + 6 bytes for value (e.g., "value0")
 	arc := NewCacheUseARC(20, onEvicted)
 
+	// Test recency (T1)
 	// Add entries that exceed cache size
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 3; i++ {
 		key := fmt.Sprintf("key%d", i)
 		arc.Put(key, String(fmt.Sprintf("value%d", i)))
 	}
 
-	// Check that some entries were evicted
-	if len(evicted) == 0 {
-		t.Error("No entries were evicted")
+	// Verify that the first entry was evicted
+	if len(evicted) != 1 {
+		t.Errorf("Expected 1 eviction, got %d", len(evicted))
 	}
+	if len(evicted) > 0 && evicted[0] != "key0" {
+		t.Errorf("Expected key0 to be evicted, got %s", evicted[0])
+	}
+
+	// Test frequency (T2)
+	// Access key1 multiple times to move it to T2
+	arc.Get("key1")
+	arc.Get("key1")
+
+	// Add new entry
+	arc.Put("key3", String("value3"))
+
+	// key2 should be evicted as it's in T1 and less frequently used
+	if !contains(evicted, "key2") {
+		t.Error("Expected key2 to be evicted due to being in T1 and less frequently used")
+	}
+
+	// Frequently used item (key1) should still be in cache
+	if _, _, ok := arc.Get("key1"); !ok {
+		t.Error("Frequently used key1 should still be in cache")
+	}
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCacheUseARC_TTL(t *testing.T) {

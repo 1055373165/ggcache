@@ -1,6 +1,7 @@
 package eviction
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -52,7 +53,7 @@ func TestCacheUseLRU_EvictionOrder(t *testing.T) {
 	}{
 		{
 			name:     "least recently used eviction",
-			maxBytes: 32, // Enough for 2 entries per segment
+			maxBytes: 512, // Increased to account for segmentation (16 segments * 32 bytes)
 			ops: []struct {
 				op    string
 				key   string
@@ -67,7 +68,7 @@ func TestCacheUseLRU_EvictionOrder(t *testing.T) {
 		},
 		{
 			name:     "update makes entry most recent",
-			maxBytes: 32,
+			maxBytes: 512, // Increased to account for segmentation
 			ops: []struct {
 				op    string
 				key   string
@@ -85,6 +86,7 @@ func TestCacheUseLRU_EvictionOrder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lru := NewCacheUseLRU(tt.maxBytes, nil)
+			defer lru.Stop() // Ensure cleanup goroutine is stopped
 
 			for _, op := range tt.ops {
 				switch op.op {
@@ -114,28 +116,56 @@ func TestCacheUseLRU_MemoryManagement(t *testing.T) {
 		mu.Unlock()
 	}
 
-	lru := NewCacheUseLRU(32, onEvicted) // Enough for 2 entries per segment
+	// Calculate exact memory requirements:
+	// Each entry needs: len(key) + len(value) bytes
+	// For keys like "key-0", "key-1": 5 bytes each
+	// For values "1234", "5678", "9012": 4 bytes each
+	// So each entry takes ~9 bytes
+	// With 16 bytes per segment (256/16), we can fit 1 entry comfortably
+	lru := NewCacheUseLRU(256, onEvicted)
+	defer lru.Stop()
 
-	// Add entries that should fit
-	lru.Put("k1", String("v1"))
-	lru.Put("k2", String("v2"))
+	// Find 3 keys that hash to the same segment
+	keys := findKeysInSameSegment(lru, 3)
+	k1, k2, k3 := keys[0], keys[1], keys[2]
 
-	if got := lru.Len(); got != 2 {
-		t.Errorf("Cache length = %d, want 2", got)
+	// Add first entry (~9 bytes)
+	v1 := String("1234")
+	lru.Put(k1, v1)
+
+	// Add second entry (~9 bytes), should trigger eviction of k1
+	v2 := String("5678")
+	lru.Put(k2, v2)
+
+	// Verify only k2 is in cache
+	if _, _, ok := lru.Get(k1); ok {
+		t.Error("k1 should have been evicted")
+	}
+	if _, _, ok := lru.Get(k2); !ok {
+		t.Error("k2 should be in cache")
 	}
 
-	// Add another entry that should trigger eviction
-	lru.Put("k3", String("v3"))
-
-	// Wait a bit for eviction to complete
-	time.Sleep(10 * time.Millisecond)
-
 	mu.Lock()
-	_, evictedK1 := evicted["k1"]
+	_, evictedK1 := evicted[k1]
 	mu.Unlock()
 
 	if !evictedK1 {
 		t.Error("Eviction callback should have been called for k1")
+	}
+
+	// Add third entry, should trigger eviction of k2
+	v3 := String("9012")
+	lru.Put(k3, v3)
+
+	// Verify only k3 is in cache
+	if _, _, ok := lru.Get(k1); ok {
+		t.Error("k1 should still be evicted")
+	}
+	if _, _, ok := lru.Get(k2); ok {
+		t.Error("k2 should have been evicted")
+	}
+	if _, _, ok := lru.Get(k3); !ok {
+		t.Error("k3 should be in cache")
 	}
 }
 
@@ -278,5 +308,20 @@ func TestCacheUseLRU_Stop(t *testing.T) {
 	// Entry should still exist because cleanup routine was stopped
 	if _, _, ok := lru.Get("key1"); !ok {
 		t.Error("Entry should still exist after stopping cleanup routine")
+	}
+}
+
+// findKeysInSameSegment returns n keys that hash to the same segment
+func findKeysInSameSegment(lru *CacheUseLRU, n int) []string {
+	seen := make(map[*segment][]string)
+	i := 0
+	for {
+		key := fmt.Sprintf("key-%d", i)
+		seg := lru.getSegment(key)
+		seen[seg] = append(seen[seg], key)
+		if len(seen[seg]) == n {
+			return seen[seg]
+		}
+		i++
 	}
 }

@@ -40,9 +40,6 @@ func NewCacheUseLRUBatch(maxBytes int64, onEvicted func(string, Value)) *CacheUs
 
 // Start starts the cleanup routine.
 func (c *CacheUseLRUBatch) Start() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.stopCleanup == nil {
 		c.stopCleanup = make(chan struct{})
 		go c.cleanupRoutine()
@@ -96,7 +93,32 @@ func (c *CacheUseLRUBatch) cleanupRoutine() {
 	for {
 		select {
 		case <-ticker.C:
-			c.CleanUp(c.ttl)
+			if c.ttl <= 0 {
+				continue
+			}
+
+			// Try to acquire lock, skip this round if can't get it
+			if !c.mu.TryLock() {
+				continue
+			}
+
+			now := time.Now()
+			for elem := c.root.Back(); elem != nil; {
+				entry := elem.Value.(*Entry)
+				if now.Sub(entry.UpdateAt) < c.ttl {
+					break
+				}
+				nextElem := elem.Prev()
+				delete(c.cache, entry.Key)
+				c.root.Remove(elem)
+				c.nbytes -= int64(len(entry.Key)) + int64(entry.Value.Len())
+				if c.OnEvicted != nil {
+					c.OnEvicted(entry.Key, entry.Value)
+				}
+				elem = nextElem
+			}
+			c.mu.Unlock()
+
 		case <-c.stopCleanup:
 			return
 		}

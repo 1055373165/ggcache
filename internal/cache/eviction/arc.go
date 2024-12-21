@@ -85,8 +85,8 @@ type ghostEntry struct {
 
 // Get retrieves a value from the cache
 func (c *CacheUseARC) Get(key string) (value Value, updateAt time.Time, ok bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	if ele, hit := c.cache[key]; hit {
 		entry := ele.Value.(*arcEntry)
