@@ -1,5 +1,5 @@
 mysql:
-    host: localhost
+    host: 127.0.0.1
     port: 3307
     database: ggcache
     username: ggcache
@@ -8,9 +8,9 @@ mysql:
 
 etcd:
     address: 
-        - localhost:2379
-        - localhost:22379
-        - localhost:32379
+        - 127.0.0.1:2379
+        - 127.0.0.1:22379
+        - 127.0.0.1:32379
     ttl: 5                   # second
 
 services:
@@ -18,18 +18,18 @@ services:
         name: gateway
         loadBalance: true
         addr:
-            - localhost:10005
+            - 127.0.0.1:10005
     student:
         name: student
         loadBalance: false
         addr: 
-            - localhost:10006
+            - 127.0.0.1:10006
     groupcache:
         name: GroupCache
         addr:
-            - localhost:9999
-            - localhost:10000
-            - localhost:10001
+            - 127.0.0.1:9999
+            - 127.0.0.1:10000
+            - 127.0.0.1:10001
         ttl:  300            # second
 
 groupManager:
