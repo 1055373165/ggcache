@@ -1,5 +1,13 @@
 # Docker Compose configuration for monitoring services
 services:
+  ggcache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ggcache
+    networks:
+      - monitoring
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus

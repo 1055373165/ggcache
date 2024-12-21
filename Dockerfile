@@ -1,15 +1,15 @@
 # 使用官方 Go 镜像作为基础镜像
-FROM golang:1.21-alpine
+FROM golang:1.21
 
 # 安装必要的系统依赖
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     bash \
     git \
     make \
     gcc \
     libc-dev \
     lsof \
-    build-base
+    && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
