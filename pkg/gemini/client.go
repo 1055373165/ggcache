@@ -125,3 +125,27 @@ func (c *Client) SuggestEvictionStrategy(ctx context.Context, requirements strin
 	prompt := BuildEvictionStrategyPrompt(requirements)
 	return c.GenerateContent(ctx, prompt)
 }
+
+// AnalyzeLogs analyzes system logs to identify anomalies and patterns
+func (c *Client) AnalyzeLogs(ctx context.Context, logs string) (string, error) {
+	prompt := BuildLogAnalysisPrompt(logs)
+	return c.GenerateContent(ctx, prompt)
+}
+
+// GenerateStatusReport generates a natural language summary of system status
+func (c *Client) GenerateStatusReport(ctx context.Context, metrics string) (string, error) {
+	prompt := BuildStatusReportPrompt(metrics)
+	return c.GenerateContent(ctx, prompt)
+}
+
+// GenerateAPIDoc generates API documentation for the given code
+func (c *Client) GenerateAPIDoc(ctx context.Context, code string) (string, error) {
+	prompt := BuildAPIDocPrompt(code)
+	return c.GenerateContent(ctx, prompt)
+}
+
+// GenerateAPIExample generates usage examples for the API
+func (c *Client) GenerateAPIExample(ctx context.Context, useCase string) (string, error) {
+	prompt := BuildAPIExamplePrompt(useCase)
+	return c.GenerateContent(ctx, prompt)
+}

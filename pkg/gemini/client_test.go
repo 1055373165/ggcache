@@ -2,7 +2,6 @@ package gemini
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -40,38 +39,82 @@ func TestNewClient(t *testing.T) {
 		t.Error("Expected non-empty response")
 	}
 
-	// Print the response
-	fmt.Printf("Gemini Response:\n%s\n", resp)
-
 	t.Run("generate cache key name", func(t *testing.T) {
-		keyName, err := client.GenerateCacheKeyName(ctx, "user session data for user_id abc123")
+		_, err := client.GenerateCacheKeyName(ctx, "user session data for user_id abc123")
 		if err != nil {
 			t.Fatalf("Failed to generate key name: %v", err)
 		}
-		t.Logf("Generated key name: %s", keyName)
 	})
 
 	t.Run("analyze cache pattern", func(t *testing.T) {
-		analysis, err := client.AnalyzeCachePattern(ctx, "hit, miss, hit, hit, miss")
+		_, err := client.AnalyzeCachePattern(ctx, "hit, miss, hit, hit, miss")
 		if err != nil {
 			t.Fatalf("Failed to analyze pattern: %v", err)
 		}
-		t.Logf("Pattern analysis: %s", analysis)
 	})
 
 	t.Run("enhance error message", func(t *testing.T) {
-		enhanced, err := client.EnhanceErrorMessage(ctx, "cache entry not found")
+		_, err := client.EnhanceErrorMessage(ctx, "cache entry not found")
 		if err != nil {
 			t.Fatalf("Failed to enhance error message: %v", err)
 		}
-		t.Logf("Enhanced error message: %s", enhanced)
 	})
 
 	t.Run("suggest eviction strategy", func(t *testing.T) {
-		suggestion, err := client.SuggestEvictionStrategy(ctx, "frequent repeated access to same items")
+		_, err := client.SuggestEvictionStrategy(ctx, "frequent repeated access to same items")
 		if err != nil {
 			t.Fatalf("Failed to suggest strategy: %v", err)
 		}
-		t.Logf("Strategy suggestion: %s", suggestion)
+	})
+
+	t.Run("analyze logs", func(t *testing.T) {
+		logs := `2024-01-01 10:00:01 ERROR Connection timeout
+2024-01-01 10:00:05 ERROR Connection timeout
+2024-01-01 10:00:10 INFO Connected
+2024-01-01 10:00:15 ERROR Cache miss rate high`
+
+		_, err := client.AnalyzeLogs(ctx, logs)
+		if err != nil {
+			t.Fatalf("Failed to analyze logs: %v", err)
+		}
+	})
+
+	t.Run("generate status report", func(t *testing.T) {
+		metrics := `Cache size: 1.2GB
+Hit rate: 85%
+Avg latency: 50ms
+Active connections: 100
+Memory usage: 75%`
+
+		_, err := client.GenerateStatusReport(ctx, metrics)
+		if err != nil {
+			t.Fatalf("Failed to generate status report: %v", err)
+		}
+	})
+
+	t.Run("generate api doc", func(t *testing.T) {
+		code := `// Set stores a value in the cache with the given key and TTL
+func (c *Cache) Set(key string, value interface{}, ttl time.Duration) error {
+	if key == "" {
+		return ErrInvalidKey
+	}
+	if ttl < 0 {
+		return ErrInvalidTTL
+	}
+	return c.store.Set(key, value, ttl)
+}`
+
+		_, err := client.GenerateAPIDoc(ctx, code)
+		if err != nil {
+			t.Fatalf("Failed to generate API doc: %v", err)
+		}
+	})
+
+	t.Run("generate api example", func(t *testing.T) {
+		useCase := "Implementing a rate limiter using the cache"
+		_, err := client.GenerateAPIExample(ctx, useCase)
+		if err != nil {
+			t.Fatalf("Failed to generate API example: %v", err)
+		}
 	})
 }
