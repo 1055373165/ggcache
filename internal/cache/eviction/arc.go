@@ -85,8 +85,8 @@ type ghostEntry struct {
 
 // Get retrieves a value from the cache
 func (c *CacheUseARC) Get(key string) (value Value, updateAt time.Time, ok bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	if ele, hit := c.cache[key]; hit {
 		entry := ele.Value.(*arcEntry)
@@ -181,6 +181,9 @@ func (c *CacheUseARC) Put(key string, value Value) {
 
 // evict removes one entry based on the ARC algorithm
 func (c *CacheUseARC) evict() {
+	if c.t1.Len() == 0 && c.t2.Len() == 0 {
+		return // Cache is empty
+	}
 	// T2 has exceeded the space it should occupy.
 	if int64(c.t1.Len()) > 0 && (int64(c.t2.Len()) > c.p || (c.t2.Len() == 0 && c.b2.Len() == 0)) {
 		// Evict from T1
@@ -219,13 +222,21 @@ func (c *CacheUseARC) removeEntry(ele *list.Element, entry *arcEntry, fromT1 boo
 	// Maintain ghost list sizes
 	for int64(c.b1.Len()) > c.maxBytes {
 		ghost := c.b1.Back()
-		delete(c.ghost, ghost.Value.(*ghostEntry).key)
-		c.b1.Remove(ghost)
+		if ghost != nil {
+			delete(c.ghost, ghost.Value.(*ghostEntry).key)
+			c.b1.Remove(ghost)
+		} else {
+			break
+		}
 	}
 	for int64(c.b2.Len()) > c.maxBytes {
 		ghost := c.b2.Back()
-		delete(c.ghost, ghost.Value.(*ghostEntry).key)
-		c.b2.Remove(ghost)
+		if ghost != nil {
+			delete(c.ghost, ghost.Value.(*ghostEntry).key)
+			c.b2.Remove(ghost)
+		} else {
+			break
+		}
 	}
 
 	if c.OnEvicted != nil {

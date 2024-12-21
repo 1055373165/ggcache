@@ -32,8 +32,8 @@ func NewCacheUseFIFO(maxBytes int64, onEvicted func(string, Value)) *CacheUseFIF
 // It returns the value, its last update time, and whether the key was found.
 // Unlike LRU, accessing an item does not affect its position in the eviction order.
 func (cuf *CacheUseFIFO) Get(key string) (Value, time.Time, bool) {
-	cuf.mu.RLock()
-	defer cuf.mu.RUnlock()
+	cuf.mu.Lock()
+	defer cuf.mu.Unlock()
 
 	if ele, ok := cuf.cache[key]; ok {
 		e := ele.Value.(*Entry)
@@ -67,7 +67,8 @@ func (cuf *CacheUseFIFO) Put(key string, value Value) {
 	}
 	ele := cuf.ll.PushBack(newEntry)
 	cuf.cache[key] = ele
-	cuf.nbytes += int64(len(newEntry.Key)) + int64(newEntry.Value.Len())
+	cuf.nbytes += int64(len(newEntry.Key)) +
+		int64(newEntry.Value.Len())
 
 	// Remove oldest entries if cache exceeds size limit
 	for cuf.maxBytes != 0 && cuf.maxBytes < cuf.nbytes {
