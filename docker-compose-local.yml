@@ -1,7 +1,7 @@
 # Docker Compose configuration for monitoring services
 services:
   ggcache:
-    image: ggcache:latest
+    build: .
     container_name: ggcache
     ports:
       - "9999:9999"
