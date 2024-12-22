@@ -1,55 +1,36 @@
 #!/bin/bash
 
-# Function to check if a process is running on a specific port
-check_port() {
-    lsof -i :$1 > /dev/null 2>&1
-    return $?
-}
+# 启动依赖的容器服务
+echo "Starting dependency containers..."
+docker-compose up -d mysql prometheus grafana
 
-# Function to wait for a port to be available
-wait_for_port() {
-    local port=$1
-    local retries=30
-    while [ $retries -gt 0 ]; do
-        if check_port $port; then
-            return 0
-        fi
-        retries=$((retries-1))
-        sleep 1
-    done
-    return 1
-}
+# 等待 MySQL 就绪
+echo "Waiting for MySQL to be ready..."
+until mysql -h 127.0.0.1 -P 3307 -u root -proot -e "SELECT 1" >/dev/null 2>&1; do
+    echo "MySQL is not ready yet..."
+    sleep 2
+done
+echo "MySQL is ready!"
 
+# 启动 etcd 集群
 echo "Starting etcd cluster..."
 goreman -f pkg/etcd/cluster/Procfile start &
-
-echo "Starting docker containers..."
-
-docker-compose up -d
-
-# Wait a bit for services to initialize
 sleep 5
 
-echo "Starting server on port 9999..."
-go run main.go -port 9999 -metricsPort 2222 -pprofPort 6060 &
-
-# Wait for the first server to start
+# 启动 ggcache 服务
+echo "Starting ggcache services..."
+go run main.go -port 9999 &
 sleep 3
 
-echo "Starting server on port 10000..."
 go run main.go -port 10000 -metricsPort 2223 -pprofPort 6061 &
-
-# Wait for the second server to start
 sleep 3
 
-echo "Starting server on port 10001..."
 go run main.go -port 10001 -metricsPort 2224 -pprofPort 6062 &
-
-# Wait for the third server to start
 sleep 3
 
-echo "Starting clients..."
+# 启动客户端测试
+echo "Starting client tests..."
 ./test/grpc/run_clients.sh
 
-# Keep the script running
+# 等待所有后台进程
 wait
