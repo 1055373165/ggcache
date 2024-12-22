@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libc-dev \
     lsof \
     curl \
+    mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 etcd
@@ -39,6 +40,11 @@ RUN go install github.com/mattn/goreman@v0.3.15
 
 # 设置环境变量
 ENV ETCD_CLUSTER_ENDPOINTS="http://127.0.0.1:2379,http://127.0.0.1:22379,http://127.0.0.1:32379"
+ENV MYSQL_HOST=mysql
+ENV MYSQL_PORT=3306
+ENV MYSQL_USER=root
+ENV MYSQL_PASSWORD=root
+ENV MYSQL_DATABASE=ggcache
 
 # 暴露服务端口
 EXPOSE 9999 10000 10001 
@@ -48,6 +54,20 @@ EXPOSE 2379 22379 32379
 
 # 创建启动脚本
 RUN echo '#!/bin/sh\n\
+\n\
+# 等待 MySQL 就绪\n\
+until mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do\n\
+  echo "Waiting for MySQL to be ready..."\n\
+  sleep 2\n\
+done\n\
+echo "MySQL is ready!"\n\
+\n\
+# 更新配置文件中的 MySQL 连接信息\n\
+sed -i "s/host: .*/host: $MYSQL_HOST/" /app/config/config.yml\n\
+sed -i "s/port: .*/port: $MYSQL_PORT/" /app/config/config.yml\n\
+sed -i "s/username: .*/username: $MYSQL_USER/" /app/config/config.yml\n\
+sed -i "s/password: .*/password: $MYSQL_PASSWORD/" /app/config/config.yml\n\
+\n\
 # 启动 etcd 集群\n\
 goreman -f pkg/etcd/cluster/Procfile start &\n\
 sleep 5\n\
