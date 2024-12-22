@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libc-dev \
     lsof \
     curl \
-    mysql-client \
+    default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 etcd
@@ -52,27 +52,21 @@ EXPOSE 2222 2223 2224
 EXPOSE 6060 6061 6062   
 EXPOSE 2379 22379 32379 
 
-# 创建启动脚本
+# 创建容器入口点脚本
 RUN echo '#!/bin/sh\n\
 \n\
 # 等待 MySQL 就绪\n\
-until mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do\n\
+until mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT 1" >/dev/null 2>&1; do\n\
   echo "Waiting for MySQL to be ready..."\n\
   sleep 2\n\
 done\n\
 echo "MySQL is ready!"\n\
 \n\
-# 更新配置文件中的 MySQL 连接信息\n\
-sed -i "s/host: .*/host: $MYSQL_HOST/" /app/config/config.yml\n\
-sed -i "s/port: .*/port: $MYSQL_PORT/" /app/config/config.yml\n\
-sed -i "s/username: .*/username: $MYSQL_USER/" /app/config/config.yml\n\
-sed -i "s/password: .*/password: $MYSQL_PASSWORD/" /app/config/config.yml\n\
-\n\
 # 启动 etcd 集群\n\
 goreman -f pkg/etcd/cluster/Procfile start &\n\
 sleep 5\n\
 \n\
-# 启动服务器\n\
+# 启动 ggcache 服务\n\
 go run main.go -port 9999 &\n\
 sleep 3\n\
 \n\
@@ -85,8 +79,8 @@ sleep 3\n\
 # 启动客户端测试\n\
 ./test/grpc/run_clients.sh\n\
 \n\
-# 保持容器运行\n\
-tail -f /dev/null' > /app/docker-entrypoint.sh \
+# 等待所有后台进程\n\
+wait' > /app/docker-entrypoint.sh \
     && chmod +x /app/docker-entrypoint.sh
 
 # 设置入口点
