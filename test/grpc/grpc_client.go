@@ -127,12 +127,72 @@ func main() {
 	}
 
 	// 构造热点数据（20%的key承载80%的访问）
-	hotKeys := []string{"张三", "李四", "王五", "赵六", "王二"} // 热点key
+	// 选择成绩最高的学生作为热点数据
+	hotKeys := []string{
+		"Emma Moore",        // 9910分
+		"郭上",                // 9818分
+		"Emma Williams",     // 9710分
+		"冯怎样",               // 9537分
+		"Emily Franklin",    // 9533分
+		"杨里",                // 9643分
+		"Hannah Harris",     // 9297分
+		"宋它",                // 9239分
+		"Joseph Walker",     // 9251分
+		"Noah Hall",         // 9360分
+		"周就",                // 9363分
+		"陈是的",               // 9373分
+		"赵到",                // 9502分
+		"杨是",                // 9536分
+		"Matthew Jefferson", // 9629分
+	}
 
 	// 构造长尾数据（80%的key承载20%的访问）
+	// 使用分数较低的学生数据
 	coldKeys := make([]string, 0)
-	for i := 0; i < 20; i++ {
-		coldKeys = append(coldKeys, fmt.Sprintf("student_%d", i))
+	// 使用ID 1014-1100范围的学生（避开已经在热点数据中的学生）
+	usedIds := map[string]bool{
+		"Emma Moore": true, "郭上": true, "Emma Williams": true,
+		"冯怎样": true, "Emily Franklin": true, "杨里": true,
+		"Hannah Harris": true, "宋它": true, "Joseph Walker": true,
+		"Noah Hall": true, "周就": true, "陈是的": true,
+		"赵到": true, "杨是": true, "Matthew Jefferson": true,
+	}
+
+	// 添加英文名学生
+	englishNames := []string{
+		"David Lopez", "Daniel Green", "Chloe Scott", "Joseph Clark",
+		"John Young", "Samuel Davis", "Isabella Hill", "Emily Baker",
+		"Ava Jenkins", "Grace Adams", "Samuel Morris", "Joseph Bell",
+		"Zoe Howard", "John Anderson", "Chloe Miller", "Samuel Collins",
+		"Sophia Sanchez", "Joseph Scott", "Christopher Jenkins", "William White",
+	}
+
+	// 添加中文名学生
+	chineseNames := []string{
+		"李说", "林它", "宋什么", "刘好像", "杨什么",
+		"胡着", "郭看", "刘好", "萧她", "刘没",
+		"赵你", "董没", "朱了", "王不", "陈一",
+	}
+
+	// 合并长尾数据，避免添加已在热点数据中的学生
+	for _, name := range englishNames {
+		if !usedIds[name] {
+			coldKeys = append(coldKeys, name)
+		}
+	}
+
+	for _, name := range chineseNames {
+		if !usedIds[name] {
+			coldKeys = append(coldKeys, name)
+		}
+	}
+
+	// 添加更多的学生ID来达到足够的数量
+	for i := 1100; i < 1400; i++ {
+		studentId := fmt.Sprintf("student_%d", i)
+		if !usedIds[studentId] {
+			coldKeys = append(coldKeys, studentId)
+		}
 	}
 
 	// 构造最终的请求序列
