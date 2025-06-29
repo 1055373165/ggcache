@@ -26,6 +26,9 @@ func Discovery(c *clientv3.Client, service string) (*grpc.ClientConn, error) {
 	return grpc.NewClient("etcd:///"+service,
 		grpc.WithResolvers(etcdResolver),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// Since there are no "master-slave/write-read" roles in the cluster, and any node can handle a request, it's easiest and most straightforward to allow clients to evenly distribute traffic among the available nodes.
+		// Server-side consistent hash (clients connect to any node randomly, if the node finds that the key belongs to the local node, it will directly fetch it, otherwise it will forward to the correct peer through grpc_fetcher, so the entire system can still ensure "the same key hits the same node", while the entry traffic is evenly distributed to the cluster.)
+		// If in the future we hope to reduce the number of forwards, we can maintain a consistent hash ring on the client side (or implement a custom balancer) to directly connect to the target peer;
 		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
 }
 

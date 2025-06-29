@@ -105,9 +105,10 @@ func (g *Group) Get(key string) (ByteView, error) {
 	metrics.RecordRequest()
 
 	if value, ok := g.cache.get(key); ok {
+		logger.LogrusObj.Infof("key %s found in cache, return directly", key)
 		return value, nil
 	}
-
+	logger.LogrusObj.Infof("key %s not found in cache, loading locally", key)
 	return g.load(key)
 }
 
@@ -119,12 +120,15 @@ func (g *Group) load(key string) (value ByteView, err error) {
 		if g.server != nil {
 			if peer, ok := g.server.Pick(key); ok {
 				if value, err = g.fetchFromPeer(peer, key); err == nil {
+					g.populateCache(key, value)
+					logger.LogrusObj.Infof("Successfully retrieved student %s score: %s from remote peer", key, string(value.b))
+					logger.LogrusObj.Infof("populate cache key: %s, value: %s in current node", key, string(value.b))
 					return value, nil
 				}
 				logger.LogrusObj.Warnf("failed to get from peer: %v", err)
 			}
 		}
-
+		logger.LogrusObj.Infof("key %s picked to local", key)
 		return g.getLocally(key)
 	})
 
@@ -159,6 +163,7 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 	value := ByteView{b: cloneBytes(bytes)}
 	g.populateCache(key, value)
 
+	logger.LogrusObj.Infof("Successfully retrieved student %s score: %s locally", key, string(value.b))
 	return value, nil
 }
 

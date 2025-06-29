@@ -33,7 +33,7 @@ type Server struct {
 	updateChan  chan struct{}
 	mu          sync.RWMutex
 	consistHash *ConsistentMap
-	clients     map[string]*Client
+	fetchers    map[string]*grpcFetcher
 }
 
 // NewServer creates a new cache server.
@@ -85,14 +85,14 @@ func (s *Server) SetPeers(peersAddrs []string) {
 
 	s.consistHash = NewConsistentHash(defaultReplicas, nil)
 	s.consistHash.AddNodes(peersAddrs...)
-	s.clients = make(map[string]*Client)
+	s.fetchers = make(map[string]*grpcFetcher)
 
 	for _, peersAddr := range peersAddrs {
 		if !validate.ValidPeerAddr(peersAddr) {
 			s.mu.Unlock()
 			panic(fmt.Sprintf("[peer %s] invalid address format, it should be x.x.x.x:port", peersAddr))
 		}
-		s.clients[peersAddr] = NewClient("GroupCache")
+		s.fetchers[peersAddr] = NewGrpcFetcher(peersAddr)
 	}
 
 	go func() {
@@ -106,7 +106,7 @@ func (s *Server) SetPeers(peersAddrs []string) {
 				}
 				return
 			default:
-				time.Sleep(2 * time.Second)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
@@ -119,7 +119,7 @@ func (s *Server) reconstruct() {
 	}
 
 	// 创建新的 map 和 hash 环
-	newClients := make(map[string]*Client)
+	newFetchers := make(map[string]*grpcFetcher)
 	newHash := NewConsistentHash(defaultReplicas, nil)
 	newHash.AddNodes(serviceList...)
 
@@ -132,24 +132,24 @@ func (s *Server) reconstruct() {
 		}
 
 		// 尝试复用现有连接
-		if client, exists := s.clients[peerAddr]; exists {
-			newClients[peerAddr] = client
+		if fetcher, exists := s.fetchers[peerAddr]; exists {
+			newFetchers[peerAddr] = fetcher
 		} else {
-			newClients[peerAddr] = NewClient("GroupCache")
+			newFetchers[peerAddr] = NewGrpcFetcher(peerAddr)
 		}
 	}
 	s.mu.RUnlock()
 
 	// 原子替换
 	s.mu.Lock()
-	oldClients := s.clients
-	s.clients = newClients
+	oldFetchers := s.fetchers
+	s.fetchers = newFetchers
 	s.consistHash = newHash
 	s.mu.Unlock()
 
-	for addr, client := range oldClients {
-		if _, exists := newClients[addr]; !exists {
-			client.Close()
+	for addr, fetcher := range oldFetchers {
+		if _, exists := newFetchers[addr]; !exists {
+			fetcher.Close()
 		}
 	}
 
@@ -164,6 +164,7 @@ func (s *Server) Pick(key string) (Fetcher, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	logger.LogrusObj.Infof("current server %s, key %s ", s.addr, key)
 	peerAddr := s.consistHash.GetNode(key)
 	if peerAddr == "" {
 		logger.LogrusObj.Warnf("hash ring not initialized yet, handling key %s locally", key)
@@ -176,7 +177,7 @@ func (s *Server) Pick(key string) (Fetcher, bool) {
 	}
 
 	logger.LogrusObj.Debugf("key %s is mapped to remote peer %s", key, peerAddr)
-	return s.clients[peerAddr], true
+	return s.fetchers[peerAddr], true
 }
 
 // Start initializes and starts the gRPC server.
@@ -300,9 +301,9 @@ func (s *Server) Stop() error {
 
 func (s *Server) cleanup() {
 	// Clear maps and help GC
-	for k := range s.clients {
-		delete(s.clients, k)
+	for k := range s.fetchers {
+		delete(s.fetchers, k)
 	}
-	s.clients = nil
+	s.fetchers = nil
 	s.consistHash = nil
 }
