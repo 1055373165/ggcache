@@ -53,7 +53,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          args: --timeout=5m
+          args: --timeout=5m --out-format=colored-line-number
           github-token: ${{ secrets.GITHUB_TOKEN }}
           only-new-issues: false
           skip-cache: true

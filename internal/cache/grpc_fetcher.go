@@ -22,7 +22,7 @@ type grpcFetcher struct {
 }
 
 func NewGrpcFetcher(peerAddr string) *grpcFetcher {
-	conn, err := grpc.Dial(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.LogrusObj.Errorf("failed to dial peer %s: %v", peerAddr, err)
 		return nil
