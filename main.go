@@ -7,9 +7,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
-	"github.com/1055373165/ggcache/internal/cache"
+	"github.com/1055373165/ggcache/internal/cache/core"
+	grpctransport "github.com/1055373165/ggcache/internal/cache/transport/grpc"
 	"github.com/1055373165/ggcache/internal/metrics"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"github.com/1055373165/ggcache/pkg/etcd/discovery"
@@ -22,7 +23,7 @@ var (
 )
 
 func main() {
-	config.InitConfig()
+	configs.InitConfig()
 	// Initialize database
 	if err := dao.InitDB(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
@@ -43,18 +44,18 @@ func main() {
 	logger.LogrusObj.Infof("Metrics server started on port %d", *metricsPort)
 
 	serviceAddr := fmt.Sprintf("localhost:%d", *port)
-	gm := cache.NewGroupManager([]string{"scores", "website"}, serviceAddr)
+	gm := core.NewGroupManager([]string{"scores", "website"}, serviceAddr)
 
 	updateChan := make(chan struct{})
-	svr, err := cache.NewServer(updateChan, serviceAddr)
+	svr, err := grpctransport.NewServer(updateChan, serviceAddr)
 	if err != nil {
 		logger.LogrusObj.Errorf("acquire grpc server instance failed, %v", err)
 		return
 	}
 
-	go discovery.DynamicServices(updateChan, config.Conf.Services["groupcache"].Name)
+	go discovery.DynamicServices(updateChan, configs.Conf.Services["groupcache"].Name)
 
-	peers, err := discovery.ListServicePeers(config.Conf.Services["groupcache"].Name)
+	peers, err := discovery.ListServicePeers(configs.Conf.Services["groupcache"].Name)
 	if err != nil {
 		logger.LogrusObj.Fatalf("failed to discover peers: %v", err)
 		return

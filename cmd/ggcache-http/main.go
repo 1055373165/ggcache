@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/1055373165/ggcache/internal/cache"
+	"github.com/1055373165/ggcache/internal/cache/core"
+	httptransport "github.com/1055373165/ggcache/internal/cache/transport/http"
 )
 
 var (
@@ -30,18 +31,18 @@ func main() {
 		serverAddrs = append(serverAddrs, v)
 	}
 
-	gm := cache.NewGroupManager([]string{"scores", "website"}, fmt.Sprintf("127.0.0.1:%d", *port))
+	gm := core.NewGroupManager([]string{"scores", "website"}, fmt.Sprintf("127.0.0.1:%d", *port))
 
 	// Start API servers
 	errChan := make(chan error, 4)
 	if *api {
 		go func() {
-			if err := cache.StartHTTPAPIServer(apiServerAddr1, gm["scores"]); err != nil {
+			if err := httptransport.StartHTTPAPIServer(apiServerAddr1, gm["scores"]); err != nil {
 				errChan <- fmt.Errorf("API server 1 failed: %v", err)
 			}
 		}()
 		go func() {
-			if err := cache.StartHTTPAPIServer(apiServerAddr2, gm["website"]); err != nil {
+			if err := httptransport.StartHTTPAPIServer(apiServerAddr2, gm["website"]); err != nil {
 				errChan <- fmt.Errorf("API server 2 failed: %v", err)
 			}
 		}()
@@ -49,12 +50,12 @@ func main() {
 
 	// Start cache servers
 	go func() {
-		if err := cache.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["scores"]); err != nil {
+		if err := httptransport.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["scores"]); err != nil {
 			errChan <- fmt.Errorf("Cache server 1 failed: %v", err)
 		}
 	}()
 	go func() {
-		if err := cache.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["website"]); err != nil {
+		if err := httptransport.StartHTTPCacheServer(serverAddrMap[*port], []string(serverAddrs), gm["website"]); err != nil {
 			errChan <- fmt.Errorf("Cache server 2 failed: %v", err)
 		}
 	}()
