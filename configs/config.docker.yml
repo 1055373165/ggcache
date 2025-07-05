@@ -1,0 +1,43 @@
+mysql:
+    host: mysql
+    port: 3306
+    database: ggcache
+    username: root
+    password: root
+    charset: utf8mb4
+
+etcd:
+    address: 
+        - 127.0.0.1:2379
+        - 127.0.0.1:22379
+        - 127.0.0.1:32379
+    ttl: 5                   # second
+
+services:
+    gateway:
+        name: gateway
+        loadBalance: true
+        addr:
+            - 127.0.0.1:10005
+    student:
+        name: student
+        loadBalance: false
+        addr: 
+            - 127.0.0.1:10006
+    groupcache:
+        name: GroupCache
+        addr:
+            - 127.0.0.1:9999
+            - 127.0.0.1:10000
+            - 127.0.0.1:10001
+        ttl:  300            # second
+
+groupManager:
+    strategy: "arc"
+    maxCacheSize: 10240000
+
+domain:
+    student:
+        name: student
+    groupcache:
+        name: GroupCache
