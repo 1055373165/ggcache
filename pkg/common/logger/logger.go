@@ -11,6 +11,35 @@ import (
 
 var LogrusObj *logrus.Logger
 
+// Init initializes the global LogrusObj. It can be called multiple times safely.
+// If level or output need to be overridden, call this before other packages use logger.
+func Init(level logrus.Level, json bool) {
+	if LogrusObj != nil {
+		LogrusObj.SetLevel(level)
+		if json {
+			LogrusObj.SetFormatter(&logrus.JSONFormatter{
+				TimestampFormat: time.RFC3339,
+			})
+		}
+		return
+	}
+
+	logger := logrus.New()
+	logger.Out = os.Stdout
+	logger.SetLevel(level)
+	if json {
+		logger.SetFormatter(&logrus.JSONFormatter{
+			TimestampFormat: time.RFC3339,
+		})
+	} else {
+		logger.SetFormatter(&logrus.TextFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			FullTimestamp:   true,
+		})
+	}
+	LogrusObj = logger
+}
+
 func init() {
 	if LogrusObj != nil {
 		outputFile, _ := setOutputFile()
@@ -18,16 +47,8 @@ func init() {
 		return
 	}
 
-	logger := logrus.New()
-	// outputFile, _ := setOutputFile()
-	// logger.Out = outputFile
-	logger.Out = os.Stdout
-	logger.SetLevel(logrus.DebugLevel)
-	logger.SetFormatter(&logrus.TextFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-
-	LogrusObj = logger
+	// default init -> debug level JSON for easier parsing in k8s / cloud native env
+	Init(logrus.DebugLevel, true)
 }
 
 func setOutputFile() (*os.File, error) {

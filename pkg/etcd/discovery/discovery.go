@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -35,7 +35,7 @@ func Discovery(c *clientv3.Client, service string) (*grpc.ClientConn, error) {
 // Go to the service registration center to find a list of
 // available service nodes based on the service name.
 func ListServicePeers(serviceName string) ([]string, error) {
-	cli, err := clientv3.New(config.DefaultEtcdConfig)
+	cli, err := clientv3.New(configs.DefaultEtcdConfig)
 	if err != nil {
 		logger.LogrusObj.Errorf("failed to connected to etcd, error: %v", err)
 		return []string{}, err
@@ -71,7 +71,7 @@ func ListServicePeers(serviceName string) ([]string, error) {
 // DynamicServices provides the ability to dynamically build global hash views
 // for the cache system and allowing for second-level view convergence.
 func DynamicServices(update chan struct{}, service string) {
-	cli, err := clientv3.New(config.DefaultEtcdConfig)
+	cli, err := clientv3.New(configs.DefaultEtcdConfig)
 	if err != nil {
 		logger.LogrusObj.Errorf("failed to connected to etcd, error: %v", err)
 		return

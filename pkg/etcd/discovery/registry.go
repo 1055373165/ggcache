@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -15,7 +15,7 @@ import (
 // Register registers the {addr} for the specified {service}. During normal service provision, this function will not return.
 // This is returned only when the 1. application is stopped 2. the lease renewal fails 3. the etcd connection is lost.
 func Register(service string, addr string, stop chan error) error {
-	cli, err := clientv3.New(config.DefaultEtcdConfig)
+	cli, err := clientv3.New(configs.DefaultEtcdConfig)
 	if err != nil {
 		logger.LogrusObj.Fatalf("err: %v", err)
 		return err
