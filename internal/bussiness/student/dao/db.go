@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 
 	"gorm.io/driver/mysql"
@@ -30,12 +30,12 @@ type DBConfig struct {
 // InitDB initializes the database connection
 func InitDB() error {
 	cfg := DBConfig{
-		Host:         config.Conf.Mysql.Host,
-		Port:         config.Conf.Mysql.Port,
-		Database:     config.Conf.Mysql.Database,
-		Username:     config.Conf.Mysql.UserName,
-		Password:     config.Conf.Mysql.Password,
-		Charset:      config.Conf.Mysql.Charset,
+		Host:         configs.Conf.Mysql.Host,
+		Port:         configs.Conf.Mysql.Port,
+		Database:     configs.Conf.Mysql.Database,
+		Username:     configs.Conf.Mysql.UserName,
+		Password:     configs.Conf.Mysql.Password,
+		Charset:      configs.Conf.Mysql.Charset,
 		MaxIdleConns: 10,
 		MaxOpenConns: 100,
 		MaxLifetime:  time.Hour,
