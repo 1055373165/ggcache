@@ -7,7 +7,7 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	"github.com/1055373165/ggcache/pkg/etcd/discovery"
@@ -54,19 +54,19 @@ func (c *Client) connect() error {
 // key "周就" in group "scores" once per second.  It is meant for manual
 // debugging / observation rather than automated tests.
 func TestSingleKeyClient() {
-	config.InitConfig()
+	configs.InitConfig()
 	if err := dao.InitDB(); err != nil {
 		logger.LogrusObj.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	cli, err := clientv3.New(config.DefaultEtcdConfig)
+	cli, err := clientv3.New(configs.DefaultEtcdConfig)
 	if err != nil {
 		panic(err)
 	}
 
 	// Change this if you want to hit another node; the picker will forward
 	// the request if the key belongs elsewhere.
-	ggcacheClient, err := NewClient(cli, config.Conf.Services["groupcache"].Name)
+	ggcacheClient, err := NewClient(cli, configs.Conf.Services["groupcache"].Name)
 	if err != nil {
 		logger.LogrusObj.Fatalf("failed to dial server: %v", err)
 	}

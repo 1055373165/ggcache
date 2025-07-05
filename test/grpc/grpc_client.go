@@ -9,7 +9,7 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/groupcachepb"
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 	discovery "github.com/1055373165/ggcache/pkg/etcd/discovery"
@@ -111,17 +111,17 @@ func (c *GGCacheClient) Get(ctx context.Context, group, key string) (*pb.GetResp
 }
 
 func main() {
-	config.InitConfig()
+	configs.InitConfig()
 	if err := dao.InitDB(); err != nil {
 		logger.LogrusObj.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	cli, err := clientv3.New(config.DefaultEtcdConfig)
+	cli, err := clientv3.New(configs.DefaultEtcdConfig)
 	if err != nil {
 		panic(err)
 	}
 
-	ggcacheClient, err := NewGGCacheClient(cli, config.Conf.Services["groupcache"].Name)
+	ggcacheClient, err := NewGGCacheClient(cli, configs.Conf.Services["groupcache"].Name)
 	if err != nil {
 		panic(err)
 	}
