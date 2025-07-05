@@ -1,5 +1,5 @@
 // Package cache implements a distributed caching system with support for various eviction strategies.
-package cache
+package core
 
 import (
 	"fmt"
@@ -11,9 +11,9 @@ import (
 	"github.com/1055373165/ggcache/pkg/common/logger"
 )
 
-// cache represents a concurrent-safe cache that supports different eviction strategies.
+// Cache represents a concurrent-safe cache that supports different eviction strategies.
 // The zero value for cache is not usable; use NewCache to create a cache.
-type cache struct {
+type Cache struct {
 	mu       sync.RWMutex // protects strategy
 	strategy eviction.CacheStrategy
 	maxBytes int64
@@ -21,7 +21,7 @@ type cache struct {
 
 // NewCache creates a new cache with the specified eviction strategy and maximum size in bytes.
 // It returns an error if the strategy is invalid or if maxBytes is not positive.
-func NewCache(strategy string, maxBytes int64) (*cache, error) {
+func NewCache(strategy string, maxBytes int64) (*Cache, error) {
 	if maxBytes <= 0 {
 		return nil, fmt.Errorf("cache size must be positive, got %d", maxBytes)
 	}
@@ -35,14 +35,14 @@ func NewCache(strategy string, maxBytes int64) (*cache, error) {
 		return nil, fmt.Errorf("failed to create cache strategy: %w", err)
 	}
 
-	return &cache{
+	return &Cache{
 		maxBytes: maxBytes,
 		strategy: s,
 	}, nil
 }
 
 // It returns the value and whether the key was found.
-func (c *cache) get(key string) (ByteView, bool) {
+func (c *Cache) Get(key string) (ByteView, bool) {
 	if c == nil {
 		return ByteView{}, false
 	}
@@ -68,7 +68,7 @@ func (c *cache) get(key string) (ByteView, bool) {
 
 // put adds a key-value pair to the cache.
 // If the key already exists, its value will be updated.
-func (c *cache) put(key string, value ByteView) {
+func (c *Cache) Put(key string, value ByteView) {
 	if c == nil {
 		return
 	}

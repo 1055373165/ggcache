@@ -1,4 +1,4 @@
-package cache
+package core
 
 // Picker is the interface that must be implemented to locate peers.
 // It uses consistent hashing to determine which node should handle a specific key.

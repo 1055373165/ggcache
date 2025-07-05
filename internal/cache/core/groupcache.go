@@ -1,4 +1,4 @@
-package cache
+package core
 
 import (
 	"context"
@@ -20,7 +20,7 @@ var (
 // Group represents a cache namespace and associated data/operations.
 type Group struct {
 	name      string
-	cache     *cache
+	cache     *Cache
 	retriever Retriever
 	server    Picker
 	flight    *FlightGroup
@@ -76,25 +76,6 @@ func GetGroup(name string) *Group {
 	return GroupManager[name]
 }
 
-// DestroyGroup removes a Group and stops its associated server.
-func DestroyGroup(name string) {
-	g := GetGroup(name)
-	if g != nil {
-		if server, ok := g.server.(*Server); ok {
-			if err := server.Stop(); err != nil {
-				logger.LogrusObj.Errorf("Failed to stop server: %v", err)
-			}
-		}
-		// Stop the flight group and clear its cache
-		if g.flight != nil {
-			g.flight.Stop()
-		}
-		mu.Lock()
-		delete(GroupManager, name)
-		mu.Unlock()
-	}
-}
-
 // Get retrieves a value from the cache by key.
 // If the key doesn't exist in cache, it loads it using the configured retriever.
 func (g *Group) Get(key string) (ByteView, error) {
@@ -104,7 +85,7 @@ func (g *Group) Get(key string) (ByteView, error) {
 
 	metrics.RecordRequest()
 
-	if value, ok := g.cache.get(key); ok {
+	if value, ok := g.cache.Get(key); ok {
 		logger.LogrusObj.Infof("key %s found in cache, return directly", key)
 		return value, nil
 	}
@@ -169,5 +150,5 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 
 // populateCache adds a key-value pair to the cache.
 func (g *Group) populateCache(key string, value ByteView) {
-	g.cache.put(key, value)
+	g.cache.Put(key, value)
 }

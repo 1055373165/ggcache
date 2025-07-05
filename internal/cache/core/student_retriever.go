@@ -1,4 +1,4 @@
-package cache
+package core
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	pb "github.com/1055373165/ggcache/api/studentpb"
-	"github.com/1055373165/ggcache/config"
+	"github.com/1055373165/ggcache/configs"
 	"github.com/1055373165/ggcache/internal/bussiness/student/dao"
 	"github.com/1055373165/ggcache/pkg/common/logger"
 
@@ -20,9 +20,9 @@ import (
 func NewGroupManager(groupNames []string, currentPeerAddr string) map[string]*Group {
 	for _, name := range groupNames {
 		retriever := createStudentRetriever()
-		group := NewGroup(name, config.Conf.GroupManager.Strategy, config.Conf.GroupManager.MaxCacheSize, retriever)
+		group := NewGroup(name, configs.Conf.GroupManager.Strategy, configs.Conf.GroupManager.MaxCacheSize, retriever)
 		GroupManager[name] = group
-		logger.LogrusObj.Infof("Group %s created with strategy %s", name, config.Conf.GroupManager.Strategy)
+		logger.LogrusObj.Infof("Group %s created with strategy %s", name, configs.Conf.GroupManager.Strategy)
 	}
 
 	return GroupManager

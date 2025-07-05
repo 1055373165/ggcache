@@ -1,5 +1,5 @@
 // Package cache implements a distributed cache system with various features.
-package cache
+package core
 
 import "time"
 
